@@ -40,17 +40,6 @@ class CrowdServer(object):
     def auth_user(self, username, password):
         """Authenticate a user/password pair against the Crowd server"""
 
-#        params = {
-#            "username": username,
-#            "password": password,
-#          'validation-factors': {
-#            'validationFactors': [
-#              {
-#                'name': 'remote_address',
-#                'value': remote_address
-#              },
-#        }
-
         url = self.rest_url + "/authentication?%s" % urlencode(
             {"username": username})
         response = self._post(url, {"value": password})
