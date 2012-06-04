@@ -51,7 +51,7 @@ class CrowdServer(object):
         # ...otherwise return a dictionary of user attributes
         return json.loads(response.text)
 
-    def get_session_token(self, username, password, remote="127.0.0.1"):
+    def get_session(self, username, password, remote="127.0.0.1"):
         """Create a session for a user"""
 
         params = {
@@ -71,9 +71,9 @@ class CrowdServer(object):
         if not response.ok:
             return None
 
-        # Otherwise return the authentication token
+        # Otherwise return the user object
         ob = json.loads(response.text)
-        return ob['token']
+        return ob
 
     def validate_session(self, token, remote="127.0.0.1"):
         """Validate a session token"""
@@ -84,7 +84,7 @@ class CrowdServer(object):
            ]
         }
 
-        url = self.rest_url + "/session/%s" % token
+        url = self.rest_url + "/session/%s?expand=user" % token
         response = self._post(url, params)
 
         # For consistency between methods use None rather than False
@@ -92,5 +92,6 @@ class CrowdServer(object):
         if not response.ok:
             return None
 
-        # Otherwise return True
-        return True
+        # Otherwise return the user object
+        ob = json.loads(response.text)
+        return ob
