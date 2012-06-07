@@ -2,7 +2,7 @@ import unittest
 import crowd
 import crowdserverstub
 import json, requests, threading
-import random
+import random, time
 
 PORT = random.randint(8000, 8020)
 APP_USER = 'testapp'
@@ -11,19 +11,25 @@ APP_PASS = 'testpass'
 class testCrowdAuth(unittest.TestCase):
     """Test Crowd authentication"""
 
-    def setUp(self):
-        self.base_url = 'http://localhost:%d' % PORT
-        self.crowd = crowd.CrowdServer(self.base_url, APP_USER, APP_PASS)
+    @classmethod
+    def setUpClass(cls):
+        cls.base_url = 'http://localhost:%d' % PORT
+        cls.crowd = crowd.CrowdServer(cls.base_url, APP_USER, APP_PASS)
 
-        self.server_thread = threading.Thread(
+        cls.server_thread = threading.Thread(
             target=crowdserverstub.run_server, args=(PORT,))
-        self.server_thread.start()
+        cls.server_thread.start()
 
         crowdserverstub.add_app(APP_USER, APP_PASS)
 
-    def tearDown(self):
-        requests.get(self.base_url + '/terminate')
-        self.server_thread.join()
+        # There is a race to start the HTTP server before
+        # the unit tests begin hitting it. Sleep briefly
+        time.sleep(0.2)
+
+    @classmethod
+    def tearDownClass(cls):
+        requests.get(cls.base_url + '/terminate')
+        cls.server_thread.join()
 
     def testAuthAppValid(self):
         """Application may authenticate with valid credentials"""
