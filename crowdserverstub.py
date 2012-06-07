@@ -44,7 +44,7 @@ def check_app_auth(headers):
     try:
         if app_auth[app_user] == app_pass:
             return True
-    except:
+    except KeyError:
         # No such user, fall through
         pass
 
