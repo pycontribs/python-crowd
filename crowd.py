@@ -24,10 +24,6 @@ class CrowdServer(object):
         return "<CrowdServer('%s', '%s', %s')>" % (self.crowd_url, self.app_name, self.app_pass)
 
     def _get(self, url):
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        }
         req = requests.get(url, auth=self.auth_info,
             headers=self.request_headers)
         return req
