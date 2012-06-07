@@ -4,14 +4,70 @@ from urllib2 import urlparse
 
 httpd = None
 
+app_auth = {}
+
+def add_app(app_name, app_pass):
+    global app_auth
+    app_auth[app_name] = app_pass
+
+def remove_app(app_name):
+    global app_auth
+    try:
+        del app_auth[app_name]
+    except KeyError: pass
+
+def check_app_auth(headers):
+    """Authenticate an application from Authorization HTTP header"""
+    import base64
+
+    try:
+        auth_header = headers["Authorization"]
+    except KeyError:
+        return False
+
+    # Only handle HTTP Basic authentication
+    m = re.match("Basic (\w+==)", auth_header)
+    if not m:
+        return False
+
+    encoded = m.groups()[0]
+    decoded = base64.decodestring(encoded)
+
+    m = re.match("([^:]+):(.+)", decoded)
+    if not m:
+        # Invalid authorization format
+        return False
+
+    app_user, app_pass = m.groups()
+
+    global app_auth
+    try:
+        if app_auth[app_user] == app_pass:
+            return True
+    except:
+        # No such user, fall through
+        pass
+
+    return False
+
+
 class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
+
+    # Disable logging of fulfilled requests
+    def log_request(self, format, *args):
+        return
 
     def _default_handler(self):
         self.send_response(404)
         self.send_header("Content-type", "text/html")
         self.end_headers()
-        self.wfile.write("Code: 404\n");
         self.wfile.write("Sorry, location does not exist\n")
+
+    def _do_app_failed_auth(self):
+        self.send_response(401)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+        self.wfile.write("Application failed to authenticate\n")
 
     def _do_terminate(self):
         # Mark server object for termination
@@ -24,17 +80,38 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def do_GET(self):
         handlers = [
-            ("^/terminate", self._do_terminate),
+            {
+                "url": "^/terminate",
+                "action": self._do_terminate,
+                "require_auth": False,
+            },
 
             # Default handler for unmatched requests
-            ("", self._default_handler),
+            { "url": "", "action": self._default_handler },
         ]
 
+        # an application may authenticate to the server
+        app_authenticated = check_app_auth(self.headers)
+
         path = urlparse.urlparse(self.path)[2]
-        for regex, method in handlers:
-            if re.search(regex, path):
-                method()
-                return
+        for handler in handlers:
+            if re.search(handler['url'], path):
+                require_auth = True
+                try: require_auth = handler['require_auth']
+                except: pass
+
+                # Allow API call to be handled if application
+                # authenticated or no auth required
+                if app_authenticated or not require_auth:
+                    handler['action']()
+                    return
+
+        # An unhandled path was encountered. This may happen if
+        # the application did not authenticate and could not
+        # match a path that permitted anonymous access
+        if not app_authenticated:
+            self._do_app_failed_auth()
+            return
 
         # The default handler should've caught any unmatched request.
         # This code should not be reached.
