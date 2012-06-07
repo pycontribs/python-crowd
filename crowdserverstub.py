@@ -5,6 +5,7 @@ from urllib2 import urlparse
 httpd = None
 
 app_auth = {}
+user_auth = {}
 
 def add_app(app_name, app_pass):
     global app_auth
@@ -43,6 +44,28 @@ def check_app_auth(headers):
     global app_auth
     try:
         if app_auth[app_user] == app_pass:
+            return True
+    except KeyError:
+        # No such user, fall through
+        pass
+
+    return False
+
+def add_user(username, password):
+    global user_auth
+    user_auth[username] = password
+
+def remove_user(username):
+    global user_auth
+    try:
+        del user_auth[username]
+    except KeyError: pass
+
+def check_user_auth(username, password):
+    """Authenticate an application from Authorization HTTP header"""
+    global user_auth
+    try:
+        if user_auth[username] == password:
             return True
     except KeyError:
         # No such user, fall through
