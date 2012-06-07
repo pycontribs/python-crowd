@@ -88,13 +88,13 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
 
     def _default_handler(self):
         self.send_response(404)
-        self.send_header("Content-type", "text/html")
+        self.send_header("Content-type", "text/plain")
         self.end_headers()
         self.wfile.write("Sorry, location does not exist\n")
 
     def _do_app_failed_auth(self):
         self.send_response(401)
-        self.send_header("Content-type", "text/html")
+        self.send_header("Content-type", "text/plain")
         self.end_headers()
         self.wfile.write("Application failed to authenticate\n")
 
@@ -103,7 +103,7 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self.server.keep_running = False
 
         self.send_response(200)
-        self.send_header("Content-type", "text/html")
+        self.send_header("Content-type", "text/plain")
         self.end_headers()
         self.wfile.write("Terminating\n")
 
@@ -145,7 +145,7 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         # The default handler should've caught any unmatched request.
         # This code should not be reached.
         self.send_response(500)
-        self.send_header("Content-type", "text/html")
+        self.send_header("Content-type", "text/plain")
         self.end_headers()
         self.wfile.write('Oops, should not be here for %s' % self.path)
 
