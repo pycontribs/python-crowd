@@ -37,6 +37,21 @@ class CrowdServer(object):
             headers=self.request_headers)
         return req
 
+    def auth_ping(self):
+        """Test that we can authenticate this application to Crowd"""
+
+        url = self.rest_url + "/non-existent/location"
+        response = self._get(url)
+
+        if response.status_code == 401:
+            # and response.text.startswith("Application failed to authenticate"):
+            return False
+        elif response.status_code == 404:
+            return True
+        else:
+            raise CrowdApiException("Unexpected response code %d: %s" % (
+                response.status_code, repr(response.text)))
+
     def auth_user(self, username, password):
         """Authenticate a user/password pair against the Crowd server"""
 
