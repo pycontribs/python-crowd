@@ -2,6 +2,12 @@ import re, sys
 import BaseHTTPServer
 from urllib2 import urlparse
 
+# Supported HTTP methods
+GET    = 1
+POST   = 2
+PUT    = 3
+DELETE = 4
+
 httpd = None
 
 app_auth = {}
@@ -101,7 +107,7 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write("Terminating\n")
 
-    def do_GET(self):
+    def _do_COMMON(self, method):
         handlers = [
             {
                 "url": "^/terminate",
@@ -142,6 +148,18 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_header("Content-type", "text/html")
         self.end_headers()
         self.wfile.write('Oops, should not be here for %s' % self.path)
+
+    def do_GET(self):
+        self._do_COMMON(GET)
+
+    def do_POST(self):
+        self._do_COMMON(POST)
+
+    def do_PUT(self):
+        self._do_COMMON(PUT)
+
+    def do_DELETE(self):
+        self._do_COMMON(DELETE)
 
 
 def init_server(port):
