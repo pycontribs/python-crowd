@@ -98,6 +98,22 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write("Application failed to authenticate\n")
 
+    def _do_user_failed_auth(self, bad_user=False, bad_pass=False):
+        response = {}
+
+        if bad_user:
+            response["reason"] = "USER_NOT_FOUND"
+            response["message"] = "User <whatever> does not exist"
+
+        if bad_pass:
+            response["reason"] = "INVALID_USER_AUTHENTICATION"
+            response["message"] = "Failed to authenticate principal, password was invalid"
+
+        self.send_response(400)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(response))
+
     def _do_terminate(self):
         # Mark server object for termination
         self.server.keep_running = False
@@ -119,10 +135,14 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
             { "url": "", "action": self._default_handler },
         ]
 
-        # an application may authenticate to the server
+        # An application must authenticate to the server
+        # except for the terminate instruction
         app_authenticated = check_app_auth(self.headers)
-
         path = urlparse.urlparse(self.path)[2]
+        if not app_authenticated and path != '/terminate':
+            self._do_app_failed_auth()
+            return
+
         for handler in handlers:
             if re.search(handler['url'], path):
                 require_auth = True
@@ -136,10 +156,11 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
                     return
 
         # An unhandled path was encountered. This may happen if
-        # the application did not authenticate and could not
+        # the user did not authenticate and could not
         # match a path that permitted anonymous access
-        if not app_authenticated:
-            self._do_app_failed_auth()
+        user_authenticated = False
+        if not user_authenticated:
+            self._do_user_failed_auth()
             return
 
         # The default handler should've caught any unmatched request.
