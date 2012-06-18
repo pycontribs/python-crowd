@@ -6,12 +6,13 @@
 Welcome to python-crowd's documentation!
 ========================================
 
+.. include:: ../README.md
+    :start-line: 3
+
 Contents:
 
 .. toctree::
    :maxdepth: 2
-
-
 
 Indices and tables
 ==================
@@ -22,3 +23,19 @@ Indices and tables
 
 .. automodule:: crowd
     :members:
+
+Simple Authentication Test
+==========================
+
+.. literalinclude:: ../examples/simple_auth_test.py
+    :lines: 2-
+    :emphasize-lines: 8-9,18
+    :linenos:
+
+Simple Token Authentication
+===========================
+
+.. literalinclude:: ../examples/simple_token_auth.py
+    :lines: 2-
+    :emphasize-lines: 8-9,18-19,26-27
+    :linenos:
