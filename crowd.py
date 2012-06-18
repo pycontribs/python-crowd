@@ -45,8 +45,8 @@ class CrowdServer(object):
         elif response.status_code == 404:
             return True
         else:
-            raise CrowdApiException("Unexpected response code %d: %s" % (
-                response.status_code, repr(response.text)))
+            # An error encountered - problem with the Crowd server?
+            return False
 
     def auth_user(self, username, password):
         """Authenticate a user/password pair against the Crowd server"""
