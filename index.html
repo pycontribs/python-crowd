@@ -54,6 +54,12 @@ that authenticates users against Crowd or integrate with Crowd&#8217;s SSO.</p>
 <p>This project has no official status within Atlassian and is provided as
 a service to the programming community. I hope that you find it useful.</p>
 </div>
+<div class="section" id="documentation">
+<h1>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h1>
+<p>Docs are built automatically by sphinx. You can build them yourself
+in the doc directory or access them at
+&lt;<a class="reference external" href="http://aelse.github.com/python-crowd/">http://aelse.github.com/python-crowd/</a>&gt;.</p>
+</div>
 <div class="section" id="examples">
 <h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
 <p>Some example invocations are provided in the examples directory, and
@@ -101,13 +107,17 @@ configuring additional applications to talk to Crowd.</p>
 <dl class="method">
 <dt id="crowd.CrowdServer.auth_ping">
 <tt class="descname">auth_ping</tt><big>(</big><big>)</big><a class="headerlink" href="#crowd.CrowdServer.auth_ping" title="Permalink to this definition">¶</a></dt>
-<dd><p>Test that application can authenticate to Crowd</p>
+<dd><p>Test that application can authenticate to Crowd.</p>
 <p>Attempts to authentication the application user against
 the Crowd server. In order for user authentication to
 work, an application must be able to authenticate.</p>
 <dl class="docutils">
 <dt>Returns:</dt>
-<dd>bool: True if the application authentication succeeded.</dd>
+<dd><dl class="first last docutils">
+<dt>bool:</dt>
+<dd>True if the application authentication succeeded.</dd>
+</dl>
+</dd>
 </dl>
 </dd></dl>
 
@@ -118,13 +128,15 @@ work, an application must be able to authenticate.</p>
 <p>Attempts to authenticate the user against the Crowd server.</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>username: The account username.
-password: The account password.</dd>
+<dd><p class="first">username: The account username.</p>
+<p class="last">password: The account password.</p>
+</dd>
 <dt>Returns:</dt>
 <dd><dl class="first docutils">
-<dt>dict: A dict mapping of user attributes if the application</dt>
-<dd>authentication was successful. See the Crowd
-documentation for the authoritative list of attributes.</dd>
+<dt>dict:</dt>
+<dd>A dict mapping of user attributes if the application
+authentication was successful. See the Crowd documentation
+for the authoritative list of attributes.</dd>
 </dl>
 <p class="last">None: If authentication failed.</p>
 </dd>
@@ -138,18 +150,21 @@ documentation for the authoritative list of attributes.</dd>
 <p>Attempts to create a user session on the Crowd server.</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd><p class="first">username: The account username.
-password: The account password.
-remote: The remote address of the user. This can be used</p>
-<blockquote class="last">
-<div>to create multiple concurrent sessions for a user.
+<dd><p class="first">username: The account username.</p>
+<p>password: The account password.</p>
+<dl class="last docutils">
+<dt>remote:</dt>
+<dd>The remote address of the user. This can be used
+to create multiple concurrent sessions for a user.
 The host you run this program may need to be configured
-in Crowd as a trusted proxy for this to work.</div></blockquote>
+in Crowd as a trusted proxy for this to work.</dd>
+</dl>
 </dd>
 <dt>Returns:</dt>
 <dd><dl class="first docutils">
-<dt>dict: A dict mapping of user attributes if the application</dt>
-<dd>authentication was successful. See the Crowd
+<dt>dict:</dt>
+<dd>A dict mapping of user attributes if the application
+authentication was successful. See the Crowd
 documentation for the authoritative list of attributes.</dd>
 </dl>
 <p class="last">None: If authentication failed.</p>
@@ -166,12 +181,14 @@ Crowd server. This may be a token provided by a user from
 a http cookie or by some other means.</p>
 <dl class="docutils">
 <dt>Args:</dt>
-<dd>token: The session token.
-remote: The remote address of the user.</dd>
+<dd><p class="first">token: The session token.</p>
+<p class="last">remote: The remote address of the user.</p>
+</dd>
 <dt>Returns:</dt>
 <dd><dl class="first docutils">
-<dt>dict: A dict mapping of user attributes if the application</dt>
-<dd>authentication was successful. See the Crowd
+<dt>dict:</dt>
+<dd>A dict mapping of user attributes if the application
+authentication was successful. See the Crowd
 documentation for the authoritative list of attributes.</dd>
 </dl>
 <p class="last">None: If authentication failed.</p>
@@ -306,6 +323,7 @@ documentation for the authoritative list of attributes.</dd>
   <h3><a href="#">Table Of Contents</a></h3>
   <ul>
 <li><a class="reference internal" href="#">Welcome to python-crowd&#8217;s documentation!</a></li>
+<li><a class="reference internal" href="#documentation">Documentation</a></li>
 <li><a class="reference internal" href="#examples">Examples</a></li>
 <li><a class="reference internal" href="#license">License</a><ul>
 </ul>
