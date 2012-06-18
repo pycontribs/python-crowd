@@ -65,14 +65,15 @@ class CrowdServer(object):
         return req
 
     def auth_ping(self):
-        """Test that application can authenticate to Crowd
+        """Test that application can authenticate to Crowd.
 
         Attempts to authentication the application user against
         the Crowd server. In order for user authentication to
         work, an application must be able to authenticate.
 
         Returns:
-            bool: True if the application authentication succeeded.
+            bool:
+                True if the application authentication succeeded.
         """
 
         url = self.rest_url + "/non-existent/location"
@@ -94,12 +95,15 @@ class CrowdServer(object):
 
         Args:
             username: The account username.
+
             password: The account password.
 
         Returns:
-            dict: A dict mapping of user attributes if the application
-                authentication was successful. See the Crowd
-                documentation for the authoritative list of attributes.
+            dict:
+                A dict mapping of user attributes if the application
+                authentication was successful. See the Crowd documentation
+                for the authoritative list of attributes.
+
             None: If authentication failed.
         """
 
@@ -121,16 +125,21 @@ class CrowdServer(object):
 
         Args:
             username: The account username.
+
             password: The account password.
-            remote: The remote address of the user. This can be used
+
+            remote:
+                The remote address of the user. This can be used
                 to create multiple concurrent sessions for a user.
                 The host you run this program may need to be configured
                 in Crowd as a trusted proxy for this to work.
 
         Returns:
-            dict: A dict mapping of user attributes if the application
+            dict:
+                A dict mapping of user attributes if the application
                 authentication was successful. See the Crowd
                 documentation for the authoritative list of attributes.
+
             None: If authentication failed.
         """
 
@@ -164,12 +173,15 @@ class CrowdServer(object):
 
         Args:
             token: The session token.
+
             remote: The remote address of the user.
 
         Returns:
-            dict: A dict mapping of user attributes if the application
+            dict:
+                A dict mapping of user attributes if the application
                 authentication was successful. See the Crowd
                 documentation for the authoritative list of attributes.
+
             None: If authentication failed.
         """
         
