@@ -75,5 +75,45 @@ class testCrowdAuth(unittest.TestCase):
         result = self.crowd.auth_user(USER, 'xxxxx')
         self.assertIs(result, None)
 
+    def testCreateSessionValidUser(self):
+        """User may create a session with valid credentials"""
+        result = self.crowd.get_session(USER, PASS)
+        self.assertIsInstance(result, dict)
+
+    def testCreateSessionInvalidUser(self):
+        """User may not create a session with invalid username"""
+        result = self.crowd.get_session('invaliduser', 'xxxxx')
+        self.assertIs(result, None)
+
+    def testCreateSessionInvalidPass(self):
+        """User may not create a session with invalid password"""
+        result = self.crowd.get_session(USER, 'xxxxx')
+        self.assertIs(result, None)
+
+    def testValidateSessionValidUser(self):
+        """Validate a valid session token"""
+        session = self.crowd.get_session(USER, PASS)
+        token = session['token']
+        result = self.crowd.validate_session(token)
+        self.assertIsInstance(result, dict)
+
+    def testValidateSessionInvalidToken(self):
+        """Detect invalid session token"""
+        token = '0' * 24
+        result = self.crowd.validate_session(token)
+        self.assertIs(result, None)
+
+    def testCreateSessionIdentical(self):
+        """Sessions from same remote are identical"""
+        session1 = self.crowd.get_session(USER, PASS, '192.168.99.99')
+        session2 = self.crowd.get_session(USER, PASS, '192.168.99.99')
+        self.assertEqual(session1, session2)
+
+    def testCreateSessionMultiple(self):
+        """User may create multiple sessions from different remote"""
+        session1 = self.crowd.get_session(USER, PASS, '192.168.99.99')
+        session2 = self.crowd.get_session(USER, PASS, '192.168.88.88')
+        self.assertNotEqual(session1, session2)
+
 if __name__ == "__main__":
     unittest.main()

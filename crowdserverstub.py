@@ -7,6 +7,7 @@ httpd = None
 
 app_auth = {}
 user_auth = {}
+session_auth = {}
 
 def add_app(app_name, app_pass):
     global app_auth
@@ -79,6 +80,51 @@ def check_user_auth(username, password):
 
     return False
 
+def create_session(username, remote):
+    """Create a user session for an authenticated user"""
+    import hashlib
+    global session_auth
+    token = hashlib.md5(username + remote).hexdigest()[:24]
+    session_auth[token] = { "username": username, "remote": remote, }
+    return token
+
+def validate_session(token, remote):
+    """Validate a user session"""
+    global session_auth
+
+    session = None
+    try: session = session_auth[token]
+    except KeyError: pass
+
+    # Unknown session token
+    if not session:
+        return None
+
+    # Check any validation factors (just remote now)
+    if session["remote"] != remote:
+        return None
+
+    # User has authenticated, return a session object
+    response = {
+        "token": token,
+        "user": build_user_dict(session["username"]),
+    }
+    return response
+
+def delete_session(token):
+    global session_auth
+    try:
+        del session_auth[token]
+    except KeyError: pass
+
+def build_user_dict(username):
+    user_dict = {
+        "name": username, "first-name": username,
+        "last-name": username, "display-name": username,
+        "email": '%s@does.not.exist' % username, "active": True,
+    }
+    return user_dict
+
 
 class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
 
@@ -134,10 +180,47 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         # or user does not exist.
         if user_authenticated:
             response_code = 200
+            response = build_user_dict(username)
+        elif user_exists(username):
+            response_code = 400
             response = {
-                "name": username, "first-name": username,
-                "last-name": username, "display-name": username,
-                "email": '%s@does.not.exist' % username, "active": True,
+                "reason": "INVALID_USER_AUTHENTICATION",
+                "message": "Failed to authenticate principal, password was invalid",
+            }
+        else:
+            response_code = 400
+            response = {
+                "reason": "USER_NOT_FOUND",
+                "message": 'User <%s> does not exist' % username
+            }
+
+        self.send_response(response_code)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(response))
+
+    def _get_session(self):
+        username = self.json_data['username']
+        password = self.json_data['password']
+        v_factor = self.json_data['validation-factors']['validationFactors']
+        remote = ''
+        for f in v_factor:
+            if f['name'] == 'remote_address':
+                remote = f['value']
+
+        user_authenticated = check_user_auth(username, password)
+
+        response = {}
+        response_code = 0
+
+        # Either user may authenticate, used an invalid password,
+        # or user does not exist.
+        if user_authenticated:
+            response_code = 200
+            token = create_session(username, remote)
+            response = {
+                "token": token,
+                "user": build_user_dict(username),
             }
         elif user_exists(username):
             response_code = 400
@@ -157,6 +240,39 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(response))
 
+    def _validate_session(self):
+        v_factor = self.json_data['validationFactors']
+        remote = ''
+        for f in v_factor:
+            if f['name'] == 'remote_address':
+                remote = f['value']
+
+        token = None
+        m = re.search('/([A-Za-z\d]{24})', self.path)
+        if m:
+            token = m.groups()[0]
+            session = validate_session(token, remote)
+        else:
+            session = None
+
+        response = {}
+        response_code = 0
+
+        if session:
+            response_code = 200
+            response = session
+        else:
+            response_code = 404
+            response = {
+                "reason": "INVALID_SSO_TOKEN",
+                "message":"Token does not validate."
+            }
+
+        self.send_response(response_code)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(response))
+
     def _do_COMMON(self, data={}):
         handlers = [
             {
@@ -167,6 +283,18 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
             {
                 "url": "/authentication",
                 "action": self._auth_user,
+                "require_auth": False,
+                "method": "POST",
+            },
+            {
+                "url": "/session$",
+                "action": self._get_session,
+                "require_auth": False,
+                "method": "POST",
+            },
+            {
+                "url": "/session/[A-Za-z0-9]{24}",
+                "action": self._validate_session,
                 "require_auth": False,
                 "method": "POST",
             },
