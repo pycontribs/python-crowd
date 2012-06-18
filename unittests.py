@@ -51,12 +51,12 @@ class testCrowdAuth(unittest.TestCase):
         self.assertIsInstance(result, dict)
 
     def testAuthUserInvalidUser(self):
-        """User may not authenticate with invalid credentials"""
+        """User may not authenticate with invalid username"""
         result = self.crowd.auth_user('invaliduser', 'xxxxx')
         self.assertIs(result, None)
 
     def testAuthUserInvalidPass(self):
-        """User may not authenticate with invalid credentials"""
+        """User may not authenticate with invalid password"""
         result = self.crowd.auth_user(USER, 'xxxxx')
         self.assertIs(result, None)
 
