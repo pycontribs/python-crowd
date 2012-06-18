@@ -34,6 +34,21 @@ class testCrowdAuth(unittest.TestCase):
         requests.get(cls.base_url + '/terminate')
         cls.server_thread.join()
 
+    def testStubUserExists(self):
+        """Check that server stub recognises user"""
+        result = crowdserverstub.user_exists(USER)
+        self.assertIs(result, True)
+
+    def testStubUserExists(self):
+        """Check that server stub does not know invalid user"""
+        result = crowdserverstub.user_exists('fakeuser')
+        self.assertIs(result, False)
+
+    def testStubCheckUserAuth(self):
+        """Check that server stub auths our user/pass combination"""
+        result = crowdserverstub.check_user_auth(USER, PASS)
+        self.assertEquals(result, True)
+
     def testAuthAppValid(self):
         """Application may authenticate with valid credentials"""
         result = self.crowd.auth_ping()
