@@ -9,6 +9,13 @@ that authenticates users against Crowd or integrate with Crowd's SSO.
 This project has no official status within Atlassian and is provided as
 a service to the programming community. I hope that you find it useful.
 
+Documentation
+=============
+
+Docs are built automatically by sphinx. You can build them yourself
+in the doc directory or access them at
+<http://aelse.github.com/python-crowd/>.
+
 Examples
 ========
 
