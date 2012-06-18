@@ -71,7 +71,7 @@ class CrowdServer(object):
             return False
 
     def auth_user(self, username, password):
-        """Authenticate a user account  against the Crowd server.
+        """Authenticate a user account against the Crowd server.
 
         Attempts to authenticate the user against the Crowd server.
 
