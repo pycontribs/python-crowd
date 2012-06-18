@@ -1,12 +1,7 @@
 import re, sys
 import BaseHTTPServer
 from urllib2 import urlparse
-
-# Supported HTTP methods
-GET    = 1
-POST   = 2
-PUT    = 3
-DELETE = 4
+import json
 
 httpd = None
 
@@ -67,6 +62,11 @@ def remove_user(username):
         del user_auth[username]
     except KeyError: pass
 
+def user_exists(username):
+    """Check that user exists"""
+    global user_auth
+    return user_auth.has_key(username)
+
 def check_user_auth(username, password):
     """Authenticate an application from Authorization HTTP header"""
     global user_auth
@@ -107,8 +107,7 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
 
         if bad_pass:
             response["reason"] = "INVALID_USER_AUTHENTICATION"
-            response["message"] = "Failed to authenticate principal, password was invalid"
-
+            response["message"] = "Failed to authenticate principal, password was invalid" 
         self.send_response(400)
         self.send_header("Content-type", "application/json")
         self.end_headers()
@@ -123,12 +122,53 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write("Terminating\n")
 
-    def _do_COMMON(self, method):
+    def _auth_user(self):
+        username = self.get_params['username'][0]
+        password = self.json_data['value']
+        user_authenticated = check_user_auth(username, password)
+
+        response = {}
+        response_code = 0
+
+        # Either user may authenticate, used an invalid password,
+        # or user does not exist.
+        if user_authenticated:
+            response_code = 200
+            response = {
+                "name": username, "first-name": username,
+                "last-name": username, "display-name": username,
+                "email": '%s@does.not.exist' % username, "active": True,
+            }
+        elif user_exists(username):
+            response_code = 400
+            response = {
+                "reason": "INVALID_USER_AUTHENTICATION",
+                "message": "Failed to authenticate principal, password was invalid",
+            }
+        else:
+            response_code = 400
+            response = {
+                "reason": "USER_NOT_FOUND",
+                "message": 'User <%s> does not exist' % username
+            }
+
+        self.send_response(response_code)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(response))
+
+    def _do_COMMON(self, data={}):
         handlers = [
             {
                 "url": "^/terminate",
                 "action": self._do_terminate,
                 "require_auth": False,
+            },
+            {
+                "url": "/authentication",
+                "action": self._auth_user,
+                "require_auth": False,
+                "method": "POST",
             },
 
             # Default handler for unmatched requests
@@ -138,27 +178,36 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         # An application must authenticate to the server
         # except for the terminate instruction
         app_authenticated = check_app_auth(self.headers)
-        path = urlparse.urlparse(self.path)[2]
-        if not app_authenticated and path != '/terminate':
+        p = urlparse.urlparse(self.path)
+
+        if not app_authenticated and p.path != '/terminate':
             self._do_app_failed_auth()
             return
 
+        self.json_data = data
+        self.get_params = urlparse.parse_qs(p.query)
+
         for handler in handlers:
-            if re.search(handler['url'], path):
+            if re.search(handler['url'], p.path):
                 require_auth = True
                 try: require_auth = handler['require_auth']
+                except: pass
+                method = None
+                try: method = handler['method']
                 except: pass
 
                 # Allow API call to be handled if application
                 # authenticated or no auth required
-                if app_authenticated or not require_auth:
+                if (app_authenticated or not require_auth) and (method == self.command or method == None):
+                    #print 'running handler for %s (%s)' % (p.path, self.path)
                     handler['action']()
                     return
 
         # An unhandled path was encountered. This may happen if
         # the user did not authenticate and could not
         # match a path that permitted anonymous access
-        user_authenticated = False
+        #user_authenticated = check_user_auth(username, password)
+        user_authenticated = None
         if not user_authenticated:
             self._do_user_failed_auth()
             return
@@ -171,16 +220,31 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self.wfile.write('Oops, should not be here for %s' % self.path)
 
     def do_GET(self):
-        self._do_COMMON(GET)
+        self._do_COMMON()
 
     def do_POST(self):
-        self._do_COMMON(POST)
+        try: ct = self.headers['Content-Type']
+        except KeyError: ct = 'unknown'
+        if ct != 'application/json':
+            print "Received unwanted Content-Type (%s) in POST" % ct
+
+        try: cl = int(self.headers['Content-Length'])
+        except KeyError: cl = 0
+
+        if cl > 0:
+            data = self.rfile.read(cl)
+        else:
+            data = ""
+
+        jdata = json.loads(data)
+
+        self._do_COMMON(data=jdata)
 
     def do_PUT(self):
-        self._do_COMMON(PUT)
+        self._do_COMMON()
 
     def do_DELETE(self):
-        self._do_COMMON(DELETE)
+        self._do_COMMON()
 
 
 def init_server(port):
