@@ -157,7 +157,7 @@ class CrowdServer(object):
             }
         }
 
-        url = self.rest_url + "/session"
+        url = self.rest_url + "/session?expand=user"
         response = self._post(url, params)
 
         # If authentication failed for any reason return None
