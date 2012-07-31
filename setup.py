@@ -7,7 +7,7 @@ setup(
     version='0.1dev',
 
     description = 'A python client to the Atlassian Crowd REST API',
-    long_description=open('README.md').read(),
+    long_description=open('README.rst').read(),
 
     author = 'Alexander Else',
     author_email = 'aelse@else.id.au',

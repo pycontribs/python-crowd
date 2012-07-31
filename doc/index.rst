@@ -6,7 +6,7 @@
 Welcome to python-crowd's documentation!
 ========================================
 
-.. include:: ../README.md
+.. include:: ../README.rst
     :start-line: 3
 
 Contents:
