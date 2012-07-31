@@ -19,6 +19,7 @@ import json
 import requests
 from urllib import urlencode
 
+
 class CrowdServer(object):
     """Crowd server authentication object.
 
@@ -148,11 +149,11 @@ class CrowdServer(object):
         """
 
         params = {
-            "username" : username,
-            "password" : password,
+            "username": username,
+            "password": password,
             "validation-factors": {
                 "validationFactors": [
-                    { "name": "remote_address", "value": remote, }
+                    {"name": "remote_address", "value": remote, }
                 ]
             }
         }
@@ -188,10 +189,10 @@ class CrowdServer(object):
 
             None: If authentication failed.
         """
-        
+
         params = {
-           "validationFactors" : [
-              { "name": "remote_address", "value": remote, }
+           "validationFactors": [
+              {"name": "remote_address", "value": remote, }
            ]
         }
 
