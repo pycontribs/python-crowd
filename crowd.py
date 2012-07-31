@@ -64,6 +64,10 @@ class CrowdServer(object):
             headers=self.request_headers)
         return req
 
+    def _delete(self, url):
+        req = requests.delete(url, auth=self.auth_info, headers=self.request_headers)
+        return req
+
     def auth_ping(self):
         """Test that application can authenticate to Crowd.
 
@@ -202,3 +206,27 @@ class CrowdServer(object):
         # Otherwise return the user object
         ob = json.loads(response.text)
         return ob
+
+    def terminate_session(self, token):
+        """Terminates the session token, effectively logging out the user
+        from all crowd-enabled services.
+
+        Args:
+            token: The session token.
+
+        Returns:
+            True: If session terminated
+
+            None: If session termination failed
+        """
+
+        url = self.rest_url + "/session/%s" % token
+        response = self._delete(url)
+
+        # For consistency between methods use None rather than False
+        # If token validation failed for any reason return None
+        if not response.ok:
+            return None
+
+        # Otherwise return True
+        return True
