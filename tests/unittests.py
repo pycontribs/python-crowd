@@ -21,14 +21,16 @@ sys.path.append('..')
 import unittest
 import crowd
 import crowdserverstub
-import json, requests, threading
+import requests, threading
 import random, time
 
 PORT = random.randint(8000, 8020)
+print "Port {0}".format(PORT)
 APP_USER = 'testapp'
 APP_PASS = 'testpass'
 USER     = 'user1'
 PASS     = 'pass1'
+
 
 class testCrowdAuth(unittest.TestCase):
     """Test Crowd authentication"""
@@ -59,7 +61,7 @@ class testCrowdAuth(unittest.TestCase):
         result = crowdserverstub.user_exists(USER)
         self.assertIs(result, True)
 
-    def testStubUserExists(self):
+    def testStubUserDoesNotExist(self):
         """Check that server stub does not know invalid user"""
         result = crowdserverstub.user_exists('fakeuser')
         self.assertIs(result, False)
@@ -134,6 +136,19 @@ class testCrowdAuth(unittest.TestCase):
         session1 = self.crowd.get_session(USER, PASS, '192.168.99.99')
         session2 = self.crowd.get_session(USER, PASS, '192.168.88.88')
         self.assertNotEqual(session1, session2)
+
+    def testTerminateSessionValidToken(self):
+        """Terminate a valid session token"""
+        session = self.crowd.get_session(USER, PASS)
+        token = session['token']
+        result = self.crowd.terminate_session(token)
+        self.assertTrue(result)
+
+    def testTerminateSessionInvalidToken(self):
+        token = '0' * 24
+        result = self.crowd.terminate_session(token)
+        self.assertIs(result, None)
+
 
 if __name__ == "__main__":
     unittest.main()
