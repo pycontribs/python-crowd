@@ -130,9 +130,7 @@ def validate_session(token, remote):
 
 def delete_session(token):
     global session_auth
-    try:
-        del session_auth[token]
-    except KeyError: pass
+    del session_auth[token]
 
 def build_user_dict(username):
     user_dict = {
@@ -170,7 +168,7 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
 
         if bad_pass:
             response["reason"] = "INVALID_USER_AUTHENTICATION"
-            response["message"] = "Failed to authenticate principal, password was invalid" 
+            response["message"] = "Failed to authenticate principal, password was invalid"
         self.send_response(400)
         self.send_header("Content-type", "application/json")
         self.end_headers()
@@ -290,75 +288,109 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(response))
 
+    def _delete_session(self):
+        m = re.search('/([A-Za-z\d]{24})', self.path)
+        if m:
+            token = m.groups()[0]
+
+        response = {}
+        response_code = 0
+
+        if token:
+            try:
+                delete_session(token)
+                response_code = 204
+            except KeyError:
+                response_code = 404
+                response = {
+                    "reason": "INVALID_SSO_TOKEN",
+                    "message": "Token does not exist."
+                }
+
+        self.send_response(response_code)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(response))
+
+    def _get_groups(self):
+        response = {u'groups': [
+                        {u'name': u'admin'},
+                        {u'name': u'editors'},
+                        {u'name': u'users'}
+                        ]}
+
+        self.send_response(200)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(response))
+
     def _do_COMMON(self, data={}):
         handlers = [
             {
-                "url": "^/terminate",
+                "url": r"/terminate",
                 "action": self._do_terminate,
                 "require_auth": False,
             },
             {
-                "url": "/authentication",
+                "url": r"/rest/usermanagement/1/authentication$",
                 "action": self._auth_user,
-                "require_auth": False,
+                "require_auth": True,
                 "method": "POST",
             },
             {
-                "url": "/session$",
+                "url": r"/rest/usermanagement/1/session$",
                 "action": self._get_session,
-                "require_auth": False,
+                "require_auth": True,
                 "method": "POST",
             },
             {
-                "url": "/session/[A-Za-z0-9]{24}",
+                "url": r"/rest/usermanagement/1/session/[A-Za-z0-9]{24}$",
                 "action": self._validate_session,
-                "require_auth": False,
+                "require_auth": True,
                 "method": "POST",
+            },
+            {
+                "url": r"/rest/usermanagement/1/session/[A-Za-z0-9]{24}$",
+                "action": self._delete_session,
+                "require_auth": True,
+                "method": "DELETE",
+            },
+            {
+                "url": r"/rest/usermanagement/1/user/group/direct$",
+                "action": self._get_groups,
+                "require_auth": True,
+                "method": "GET",
             },
 
             # Default handler for unmatched requests
-            { "url": "", "action": self._default_handler },
+            {
+                "url": r".*",
+                "action": self._default_handler,
+                "require_auth": True,
+            },
         ]
 
-        # An application must authenticate to the server
-        # except for the terminate instruction
-        app_authenticated = check_app_auth(self.headers)
         p = urlparse.urlparse(self.path)
-
-        if not app_authenticated and p.path != '/terminate':
-            self._do_app_failed_auth()
-            return
 
         self.json_data = data
         self.get_params = urlparse.parse_qs(p.query)
 
         for handler in handlers:
-            if re.search(handler['url'], p.path):
-                require_auth = True
-                try: require_auth = handler['require_auth']
-                except: pass
-                method = None
-                try: method = handler['method']
-                except: pass
+            method = handler.get('method')
+            if (re.match(handler['url'], p.path)
+                and (not method or method == self.command)):
 
-                # Allow API call to be handled if application
-                # authenticated or no auth required
-                if (app_authenticated or not require_auth) and (method == self.command or method == None):
-                    #print 'running handler for %s (%s)' % (p.path, self.path)
-                    handler['action']()
+                # Authenticate application if required
+                require_auth = handler.get('require_auth')
+                if require_auth and not check_app_auth(self.headers):
+                    self._do_app_failed_auth()
                     return
 
-        # An unhandled path was encountered. This may happen if
-        # the user did not authenticate and could not
-        # match a path that permitted anonymous access
-        #user_authenticated = check_user_auth(username, password)
-        user_authenticated = None
-        if not user_authenticated:
-            self._do_user_failed_auth()
-            return
+                # Run the handler's action
+                handler['action']()
+                return
 
-        # The default handler should've caught any unmatched request.
-        # This code should not be reached.
+        # An unhandled path was encountered.
         self.send_response(500)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
@@ -368,21 +400,17 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self._do_COMMON()
 
     def do_POST(self):
-        try: ct = self.headers['Content-Type']
-        except KeyError: ct = 'unknown'
+        ct = self.headers.get('Content-Type')
         if ct != 'application/json':
             print "Received unwanted Content-Type (%s) in POST" % ct
 
-        try: cl = int(self.headers['Content-Length'])
-        except KeyError: cl = 0
-
+        cl = int(self.headers.get('Content-Length', 0))
         if cl > 0:
             data = self.rfile.read(cl)
         else:
             data = ""
 
         jdata = json.loads(data)
-
         self._do_COMMON(data=jdata)
 
     def do_PUT(self):

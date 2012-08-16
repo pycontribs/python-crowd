@@ -19,6 +19,7 @@ import json
 import requests
 from urllib import urlencode
 
+
 class CrowdServer(object):
     """Crowd server authentication object.
 
@@ -62,6 +63,10 @@ class CrowdServer(object):
     def _post(self, url, post_data):
         req = requests.post(url, data=json.dumps(post_data), auth=self.auth_info,
             headers=self.request_headers)
+        return req
+
+    def _delete(self, url):
+        req = requests.delete(url, auth=self.auth_info, headers=self.request_headers)
         return req
 
     def auth_ping(self):
@@ -144,16 +149,16 @@ class CrowdServer(object):
         """
 
         params = {
-            "username" : username,
-            "password" : password,
+            "username": username,
+            "password": password,
             "validation-factors": {
                 "validationFactors": [
-                    { "name": "remote_address", "value": remote, }
+                    {"name": "remote_address", "value": remote, }
                 ]
             }
         }
 
-        url = self.rest_url + "/session"
+        url = self.rest_url + "/session?expand=user"
         response = self._post(url, params)
 
         # If authentication failed for any reason return None
@@ -184,10 +189,10 @@ class CrowdServer(object):
 
             None: If authentication failed.
         """
-        
+
         params = {
-           "validationFactors" : [
-              { "name": "remote_address", "value": remote, }
+           "validationFactors": [
+              {"name": "remote_address", "value": remote, }
            ]
         }
 
@@ -202,3 +207,37 @@ class CrowdServer(object):
         # Otherwise return the user object
         ob = json.loads(response.text)
         return ob
+
+    def terminate_session(self, token):
+        """Terminates the session token, effectively logging out the user
+        from all crowd-enabled services.
+
+        Args:
+            token: The session token.
+
+        Returns:
+            True: If session terminated
+
+            None: If session termination failed
+        """
+
+        url = self.rest_url + "/session/%s" % token
+        response = self._delete(url)
+
+        # For consistency between methods use None rather than False
+        # If token validation failed for any reason return None
+        if not response.ok:
+            return None
+
+        # Otherwise return True
+        return True
+
+    def get_groups(self, username):
+
+        url = self.rest_url + "/user/group/direct?username={0}".format(username)
+        response = self._get(url)
+
+        if not response.ok:
+            return None
+
+        return [g['name'] for g in json.loads(response.text)['groups']]
