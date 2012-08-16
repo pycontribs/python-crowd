@@ -312,6 +312,18 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(response))
 
+    def _get_groups(self):
+        response = {u'groups': [
+                        {u'name': u'admin'},
+                        {u'name': u'editors'},
+                        {u'name': u'users'}
+                        ]}
+
+        self.send_response(200)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(response))
+
     def _do_COMMON(self, data={}):
         handlers = [
             {
@@ -342,6 +354,12 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
                 "action": self._delete_session,
                 "require_auth": True,
                 "method": "DELETE",
+            },
+            {
+                "url": r"/rest/usermanagement/1/user/group/direct$",
+                "action": self._get_groups,
+                "require_auth": True,
+                "method": "GET",
             },
 
             # Default handler for unmatched requests

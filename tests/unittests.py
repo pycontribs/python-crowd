@@ -149,6 +149,10 @@ class testCrowdAuth(unittest.TestCase):
         result = self.crowd.terminate_session(token)
         self.assertIs(result, None)
 
+    def testGetGroups(self):
+        result = self.crowd.get_groups('luke')
+        self.assertEquals(set(result), set([u'admin', u'editors', u'users']))
+
 
 if __name__ == "__main__":
     unittest.main()

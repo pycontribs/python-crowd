@@ -231,3 +231,13 @@ class CrowdServer(object):
 
         # Otherwise return True
         return True
+
+    def get_groups(self, username):
+
+        url = self.rest_url + "/user/group/direct?username={0}".format(username)
+        response = self._get(url)
+
+        if not response.ok:
+            return None
+
+        return [g['name'] for g in json.loads(response.text)['groups']]
