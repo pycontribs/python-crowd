@@ -30,6 +30,7 @@ APP_USER = 'testapp'
 APP_PASS = 'testpass'
 USER     = 'user1'
 PASS     = 'pass1'
+GROUP    = 'group1'
 
 
 class testCrowdAuth(unittest.TestCase):
@@ -149,9 +150,17 @@ class testCrowdAuth(unittest.TestCase):
         result = self.crowd.terminate_session(token)
         self.assertIs(result, None)
 
-    def testGetGroups(self):
-        result = self.crowd.get_groups('luke')
-        self.assertEquals(set(result), set([u'admin', u'editors', u'users']))
+    def testGetGroupsNotEmpty(self):
+        crowdserverstub.add_user_to_group(USER, GROUP)
+        result = self.crowd.get_groups(USER)
+        self.assertEquals(set(result), set([GROUP]))
+        crowdserverstub.remove_user_from_group(USER, GROUP)
+
+    def testRemoveUserFromGroup(self):
+        crowdserverstub.add_user_to_group(USER, GROUP)
+        crowdserverstub.remove_user_from_group(USER, GROUP)
+        result = self.crowd.get_groups(USER)
+        self.assertEquals(set(result), set([]))
 
 
 if __name__ == "__main__":
