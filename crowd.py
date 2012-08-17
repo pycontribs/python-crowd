@@ -234,7 +234,8 @@ class CrowdServer(object):
 
     def get_groups(self, username):
 
-        url = self.rest_url + "/user/group/direct?username={0}".format(username)
+        url = self.rest_url + "/user/group/direct?%s" % urlencode(
+            {"username": username})
         response = self._get(url)
 
         if not response.ok:
