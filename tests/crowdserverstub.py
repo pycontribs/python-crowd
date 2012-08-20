@@ -24,6 +24,7 @@ httpd = None
 
 app_auth = {}
 user_auth = {}
+group_auth = {}
 session_auth = {}
 
 def add_app(app_name, app_pass):
@@ -69,6 +70,38 @@ def check_app_auth(headers):
         pass
 
     return False
+
+def add_user_to_group(username, group):
+    global group_auth
+    if not group_auth.has_key(username):
+        group_auth[username] = []
+    if not group in group_auth[username]:
+        group_auth[username].append(group)
+
+def remove_user_from_group(username, group):
+    global group_auth
+    try:
+        group_auth[username] = filter(lambda x: x != group,
+        group_auth[username])
+    except KeyError: pass
+
+def user_exists_in_group(username, group):
+    """Check that user exists in a group"""
+    global group_auth
+    try:
+        return group in group_auth[username]
+    except:
+        pass
+    return False
+
+def get_user_group_membership(username):
+    """List of groups user is in"""
+    global group_auth
+    try:
+        return group_auth[username]
+    except:
+        pass
+    return []
 
 def add_user(username, password):
     global user_auth
@@ -313,11 +346,9 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self.wfile.write(json.dumps(response))
 
     def _get_groups(self):
-        response = {u'groups': [
-                        {u'name': u'admin'},
-                        {u'name': u'editors'},
-                        {u'name': u'users'}
-                        ]}
+        username = self.get_params['username'][0]
+        groups = get_user_group_membership(username)
+        response = {u'groups': map(lambda x: {u'name': x}, groups)}
 
         self.send_response(200)
         self.send_header("Content-type", "application/json")
