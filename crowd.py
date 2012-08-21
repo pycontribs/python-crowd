@@ -233,6 +233,12 @@ class CrowdServer(object):
         return True
 
     def get_groups(self, username):
+        """Retrieve list of group names that have <username> as a member.
+
+        Returns:
+            list:
+                A list of strings of group names.
+        """
 
         url = self.rest_url + "/user/group/direct?%s" % urlencode(
             {"username": username})
