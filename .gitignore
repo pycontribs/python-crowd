@@ -1,0 +1,7 @@
+*.pyc
+Crowd.egg-info/
+_sources/
+build/
+dist/
+doc/
+tests/
