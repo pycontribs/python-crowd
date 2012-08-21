@@ -144,6 +144,20 @@ for the authoritative list of attributes.</dd>
 </dd></dl>
 
 <dl class="method">
+<dt id="crowd.CrowdServer.get_groups">
+<tt class="descname">get_groups</tt><big>(</big><em>username</em><big>)</big><a class="headerlink" href="#crowd.CrowdServer.get_groups" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve list of group names that have &lt;username&gt; as a member.</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd><dl class="first last docutils">
+<dt>list:</dt>
+<dd>A list of strings of group names.</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
 <dt id="crowd.CrowdServer.get_session">
 <tt class="descname">get_session</tt><big>(</big><em>username</em>, <em>password</em>, <em>remote='127.0.0.1'</em><big>)</big><a class="headerlink" href="#crowd.CrowdServer.get_session" title="Permalink to this definition">¶</a></dt>
 <dd><p>Create a session for a user.</p>
@@ -168,6 +182,21 @@ authentication was successful. See the Crowd
 documentation for the authoritative list of attributes.</dd>
 </dl>
 <p class="last">None: If authentication failed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="crowd.CrowdServer.terminate_session">
+<tt class="descname">terminate_session</tt><big>(</big><em>token</em><big>)</big><a class="headerlink" href="#crowd.CrowdServer.terminate_session" title="Permalink to this definition">¶</a></dt>
+<dd><p>Terminates the session token, effectively logging out the user
+from all crowd-enabled services.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>token: The session token.</dd>
+<dt>Returns:</dt>
+<dd><p class="first">True: If session terminated</p>
+<p class="last">None: If session termination failed</p>
 </dd>
 </dl>
 </dd></dl>
