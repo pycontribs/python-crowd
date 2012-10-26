@@ -4,7 +4,8 @@ setup(
     name='Crowd',
     license='GPL v3',
     py_modules=['crowd',],
-    version='0.3dev',
+    version='0.4dev',
+    install_requires=['requests'],
 
     description = 'A python client to the Atlassian Crowd REST API',
     long_description=open('README.rst').read(),
