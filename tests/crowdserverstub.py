@@ -103,6 +103,18 @@ def get_user_group_membership(username):
         pass
     return []
 
+def get_group_users(groupname):
+    """List of users in the group"""
+    global group_auth
+    users = []
+    for username, groups in group_auth.iteritems():
+        try:
+            if groupname in groups:
+                users.append(username)
+        except:
+            pass
+    return users
+
 def add_user(username, password):
     global user_auth
     user_auth[username] = password
@@ -355,6 +367,29 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(response))
 
+    def _get_group_users(self):
+        groupname = self.get_params['groupname'][0]
+        users = get_group_users(groupname)
+        response = {u'users': map(lambda x: {u'name': x}, users)}
+
+        self.send_response(200)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(response))
+
+    def _get_user(self):
+        username = self.get_params['username'][0]
+        if user_exists(username):
+            response = {u'user': {u'name': username}}
+            self.send_response(200)
+        else:
+            response = {}
+            self.send_response(404)
+
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(response))
+
     def _do_COMMON(self, data={}):
         handlers = [
             {
@@ -392,6 +427,25 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
                 "require_auth": True,
                 "method": "GET",
             },
+            {
+                "url": r"/rest/usermanagement/1/user/group/nested$",
+                "action": self._get_groups,
+                "require_auth": True,
+                "method": "GET",
+            },
+            {
+                "url": r"/rest/usermanagement/1/group/user/nested$",
+                "action": self._get_group_users,
+                "require_auth": True,
+                "method": "GET",
+            },
+            {
+                "url": r"/rest/usermanagement/1/user$",
+                "action": self._get_user,
+                "require_auth": True,
+                "method": "GET",
+            },
+
 
             # Default handler for unmatched requests
             {
