@@ -156,11 +156,27 @@ class testCrowdAuth(unittest.TestCase):
         self.assertEquals(set(result), set([GROUP]))
         crowdserverstub.remove_user_from_group(USER, GROUP)
 
+    def testGetNestedGroupsNotEmpty(self):
+        crowdserverstub.add_user_to_group(USER, GROUP)
+        result = self.crowd.get_nested_groups(USER)
+        self.assertEquals(set(result), set([GROUP]))
+        crowdserverstub.remove_user_from_group(USER, GROUP)
+
     def testRemoveUserFromGroup(self):
         crowdserverstub.add_user_to_group(USER, GROUP)
         crowdserverstub.remove_user_from_group(USER, GROUP)
         result = self.crowd.get_groups(USER)
         self.assertEquals(set(result), set([]))
+
+    def testGetNestedGroupUsersNotEmpty(self):
+        crowdserverstub.add_user_to_group(USER, GROUP)
+        result = self.crowd.get_nested_group_users(GROUP)
+        self.assertEquals(set(result), set([USER]))
+        crowdserverstub.remove_user_from_group(USER, GROUP)
+
+    def testUserExists(self):
+        result = self.crowd.user_exists(USER)
+        self.assertTrue(result)
 
 
 if __name__ == "__main__":

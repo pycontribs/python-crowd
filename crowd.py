@@ -233,7 +233,7 @@ class CrowdServer(object):
         return True
 
     def get_groups(self, username):
-        """Retrieve list of group names that have <username> as a member.
+        """Retrieves a list of group names that have <username> as a direct member.
 
         Returns:
             list:
@@ -248,3 +248,67 @@ class CrowdServer(object):
             return None
 
         return [g['name'] for g in json.loads(response.text)['groups']]
+
+    def get_nested_groups(self, username):
+        """Retrieve a list of all group names that have <username> as a direct or indirect member.
+
+        Args:
+            username: The account username.
+
+
+        Returns:
+            list:
+                A list of strings of group names.
+        """
+
+        url = self.rest_url + "/user/group/nested?%s" % urlencode(
+            {"username": username})
+        response = self._get(url)
+
+        if not response.ok:
+            return None
+
+        return [g['name'] for g in json.loads(response.text)['groups']]
+
+    def get_nested_group_users(self, groupname):
+        """Retrieves a list of all users that directly or indirectly belong to the given groupname.
+
+        Args:
+            groupname: The group name.
+
+
+        Returns:
+            list:
+                A list of strings of user names.
+        """
+
+        url = self.rest_url + "/group/user/nested?%s" % urlencode(
+            {"groupname": groupname})
+        response = self._get(url)
+
+        if not response.ok:
+            return None
+
+        return [u['name'] for u in json.loads(response.text)['users']]
+
+
+    def user_exists(self, username):
+        """Determines if the user exists.
+
+        Args:
+            username: The user name.
+
+
+        Returns:
+            bool:
+                True if the user exists in the Crowd application.
+        """
+
+        url = self.rest_url + "/user?%s" % urlencode(
+            {"username": username})
+        response = self._get(url)
+
+        if not response.ok:
+            return None
+
+        return True
