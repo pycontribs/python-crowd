@@ -8,7 +8,7 @@
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     
-    <title>Welcome to python-crowd’s documentation! &mdash; python-crowd 0.4dev documentation</title>
+    <title>Welcome to python-crowd’s documentation! &mdash; python-crowd 0.5 documentation</title>
     
     <link rel="stylesheet" href="_static/default.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
@@ -16,7 +16,7 @@
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
         URL_ROOT:    '',
-        VERSION:     '0.4dev',
+        VERSION:     '0.5',
         COLLAPSE_INDEX: false,
         FILE_SUFFIX: '.html',
         HAS_SOURCE:  true
@@ -25,7 +25,7 @@
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/underscore.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="python-crowd 0.4dev documentation" href="#" /> 
+    <link rel="top" title="python-crowd 0.5 documentation" href="#" /> 
   </head>
   <body>
     <div class="related">
@@ -37,7 +37,7 @@
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="#">python-crowd 0.4dev documentation</a> &raquo;</li> 
+        <li><a href="#">python-crowd 0.5 documentation</a> &raquo;</li> 
       </ul>
     </div>  
 
@@ -146,8 +146,40 @@ for the authoritative list of attributes.</dd>
 <dl class="method">
 <dt id="crowd.CrowdServer.get_groups">
 <tt class="descname">get_groups</tt><big>(</big><em>username</em><big>)</big><a class="headerlink" href="#crowd.CrowdServer.get_groups" title="Permalink to this definition">¶</a></dt>
-<dd><p>Retrieve list of group names that have &lt;username&gt; as a member.</p>
+<dd><p>Retrieves a list of group names that have &lt;username&gt; as a direct member.</p>
 <dl class="docutils">
+<dt>Returns:</dt>
+<dd><dl class="first last docutils">
+<dt>list:</dt>
+<dd>A list of strings of group names.</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="crowd.CrowdServer.get_nested_group_users">
+<tt class="descname">get_nested_group_users</tt><big>(</big><em>groupname</em><big>)</big><a class="headerlink" href="#crowd.CrowdServer.get_nested_group_users" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves a list of all users that directly or indirectly belong to the given groupname.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>groupname: The group name.</dd>
+<dt>Returns:</dt>
+<dd><dl class="first last docutils">
+<dt>list:</dt>
+<dd>A list of strings of user names.</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="crowd.CrowdServer.get_nested_groups">
+<tt class="descname">get_nested_groups</tt><big>(</big><em>username</em><big>)</big><a class="headerlink" href="#crowd.CrowdServer.get_nested_groups" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve a list of all group names that have &lt;username&gt; as a direct or indirect member.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>username: The account username.</dd>
 <dt>Returns:</dt>
 <dd><dl class="first last docutils">
 <dt>list:</dt>
@@ -197,6 +229,22 @@ from all crowd-enabled services.</p>
 <dt>Returns:</dt>
 <dd><p class="first">True: If session terminated</p>
 <p class="last">None: If session termination failed</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="crowd.CrowdServer.user_exists">
+<tt class="descname">user_exists</tt><big>(</big><em>username</em><big>)</big><a class="headerlink" href="#crowd.CrowdServer.user_exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines if the user exists.</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd>username: The user name.</dd>
+<dt>Returns:</dt>
+<dd><dl class="first last docutils">
+<dt>bool:</dt>
+<dd>True if the user exists in the Crowd application.</dd>
+</dl>
 </dd>
 </dl>
 </dd></dl>
@@ -393,7 +441,7 @@ documentation for the authoritative list of attributes.</dd>
         <li class="right" >
           <a href="py-modindex.html" title="Python Module Index"
              >modules</a> |</li>
-        <li><a href="#">python-crowd 0.4dev documentation</a> &raquo;</li> 
+        <li><a href="#">python-crowd 0.5 documentation</a> &raquo;</li> 
       </ul>
     </div>
     <div class="footer">
