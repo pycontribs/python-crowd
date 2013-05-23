@@ -282,8 +282,8 @@ class CrowdServer(object):
                 A list of strings of user names.
         """
 
-        url = self.rest_url + "/group/user/nested?%s" % urlencode(
-            {"groupname": groupname})
+        url = self.rest_url + "/group/user/nested?%s%s" % (urlencode(
+            {"groupname": groupname}), "&start-index=0&max-results=99999")
         response = self._get(url)
 
         if not response.ok:
