@@ -88,7 +88,6 @@ class CrowdServer(object):
         response = self._get(url)
 
         if response.status_code == 401:
-            # and response.text.startswith("Application failed to authenticate"):
             return False
         elif response.status_code == 404:
             return True
