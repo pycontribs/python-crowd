@@ -56,26 +56,29 @@ class CrowdServer(object):
         return "Crowd Server at %s" % self.crowd_url
 
     def __repr__(self):
-        return "<CrowdServer('%s', '%s', %s')>" % (self.crowd_url, self.app_name, self.app_pass)
+        return "<CrowdServer('%s', '%s', %s')>" % \
+            (self.crowd_url, self.app_name, self.app_pass)
 
     def _get(self, url):
         req = requests.get(url, auth=self.auth_info,
-            headers=self.request_headers)
+                           headers=self.request_headers)
         return req
 
     def _post(self, url, post_data):
-        req = requests.post(url, data=json.dumps(post_data), auth=self.auth_info,
-            headers=self.request_headers)
+        req = requests.post(url, data=json.dumps(post_data),
+                            auth=self.auth_info,
+                            headers=self.request_headers)
         return req
 
     def _delete(self, url):
-        req = requests.delete(url, auth=self.auth_info, headers=self.request_headers)
+        req = requests.delete(url, auth=self.auth_info,
+                              headers=self.request_headers)
         return req
 
     def auth_ping(self):
         """Test that application can authenticate to Crowd.
 
-        Attempts to authentication the application user against
+        Attempts to authenticate the application user against
         the Crowd server. In order for user authentication to
         work, an application must be able to authenticate.
 
@@ -88,7 +91,6 @@ class CrowdServer(object):
         response = self._get(url)
 
         if response.status_code == 401:
-            # and response.text.startswith("Application failed to authenticate"):
             return False
         elif response.status_code == 404:
             return True
@@ -139,7 +141,7 @@ class CrowdServer(object):
             remote:
                 The remote address of the user. This can be used
                 to create multiple concurrent sessions for a user.
-                The host you run this program may need to be configured
+                The host you run this program on may need to be configured
                 in Crowd as a trusted proxy for this to work.
 
         Returns:
@@ -194,9 +196,9 @@ class CrowdServer(object):
         """
 
         params = {
-           "validationFactors": [
-              {"name": "remote_address", "value": remote, }
-           ]
+            "validationFactors": [
+                {"name": "remote_address", "value": remote, }
+            ]
         }
 
         url = self.rest_url + "/session/%s?expand=user" % token
@@ -293,7 +295,6 @@ class CrowdServer(object):
             return None
 
         return [u['name'] for u in json.loads(response.text)['users']]
-
 
     def user_exists(self, username):
         """Determines if the user exists.
