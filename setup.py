@@ -1,4 +1,6 @@
 from setuptools import setup
+import os.path
+__dir__ = os.path.dirname(os.path.abspath(__file__))
 
 setup(
     name='Crowd',
@@ -8,7 +10,7 @@ setup(
     install_requires=['requests'],
 
     description='A python client to the Atlassian Crowd REST API',
-    long_description=open('README.rst').read(),
+    long_description=open(os.path.join(__dir__, 'README.rst')).read(),
 
     author='Alexander Else',
     author_email='aelse@else.id.au',
