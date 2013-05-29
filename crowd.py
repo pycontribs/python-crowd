@@ -72,7 +72,7 @@ class CrowdServer(object):
     def auth_ping(self):
         """Test that application can authenticate to Crowd.
 
-        Attempts to authentication the application user against
+        Attempts to authenticate the application user against
         the Crowd server. In order for user authentication to
         work, an application must be able to authenticate.
 
