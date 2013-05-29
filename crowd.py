@@ -17,7 +17,10 @@
 
 import json
 import requests
-from urllib import urlencode
+try:
+    from urllib import urlencode  # Py27
+except ImportError:
+    from urllib.parse import urlencode  # Py3k
 
 
 class CrowdServer(object):
@@ -43,11 +46,12 @@ class CrowdServer(object):
         self.app_pass = app_pass
         self.rest_url = crowd_url.rstrip("/") + "/rest/usermanagement/1"
 
-        self.auth_info = requests.auth.HTTPBasicAuth(app_name, app_pass)
-        self.request_headers = {
+        self.session = requests.Session()
+        self.session.auth = (app_name, app_pass)
+        self.session.headers.update({
             "Content-Type": "application/json",
             "Accept": "application/json",
-        }
+        })
 
     def __str__(self):
         return "Crowd Server at %s" % self.crowd_url
@@ -57,19 +61,15 @@ class CrowdServer(object):
             (self.crowd_url, self.app_name, self.app_pass)
 
     def _get(self, url):
-        req = requests.get(url, auth=self.auth_info,
-                           headers=self.request_headers)
+        req = self.session.get(url)
         return req
 
     def _post(self, url, post_data):
-        req = requests.post(url, data=json.dumps(post_data),
-                            auth=self.auth_info,
-                            headers=self.request_headers)
+        req = self.session.post(url, data=json.dumps(post_data))
         return req
 
     def _delete(self, url):
-        req = requests.delete(url, auth=self.auth_info,
-                              headers=self.request_headers)
+        req = self.session.delete(url)
         return req
 
     def auth_ping(self):
