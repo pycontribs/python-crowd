@@ -16,8 +16,17 @@
 # along with python-crowd.  If not, see <http://www.gnu.org/licenses/>.
 
 import re, sys
-import BaseHTTPServer
-from urllib2 import urlparse
+
+try:
+    from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler  # Py27
+except ImportError:
+    from http.server import HTTPServer, BaseHTTPRequestHandler  # Py3k
+
+try:
+    from urllib2 import urlparse  # Py27
+except ImportError:
+    from urllib import parse as urlparse  # Py3k
+
 import json
 
 httpd = None
@@ -51,8 +60,8 @@ def check_app_auth(headers):
     if not m:
         return False
 
-    encoded = m.groups()[0]
-    decoded = base64.decodestring(encoded)
+    encoded = m.groups()[0].encode('ascii')
+    decoded = base64.decodestring(encoded).decode('ascii')
 
     m = re.match("([^:]+):(.+)", decoded)
     if not m:
@@ -73,16 +82,17 @@ def check_app_auth(headers):
 
 def add_user_to_group(username, group):
     global group_auth
-    if not group_auth.has_key(username):
+    if username not in group_auth:
         group_auth[username] = []
-    if not group in group_auth[username]:
+    if group not in group_auth[username]:
         group_auth[username].append(group)
 
 def remove_user_from_group(username, group):
     global group_auth
     try:
-        group_auth[username] = filter(lambda x: x != group,
-        group_auth[username])
+        group_auth[username] = list(
+            filter(lambda x: x != group, group_auth[username])
+        )
     except KeyError: pass
 
 def user_exists_in_group(username, group):
@@ -107,7 +117,7 @@ def get_group_users(groupname):
     """List of users in the group"""
     global group_auth
     users = []
-    for username, groups in group_auth.iteritems():
+    for username, groups in group_auth.items():
         try:
             if groupname in groups:
                 users.append(username)
@@ -128,7 +138,7 @@ def remove_user(username):
 def user_exists(username):
     """Check that user exists"""
     global user_auth
-    return user_auth.has_key(username)
+    return (username in user_auth)
 
 def check_user_auth(username, password):
     """Authenticate an application from Authorization HTTP header"""
@@ -146,7 +156,7 @@ def create_session(username, remote):
     """Create a user session for an authenticated user"""
     import hashlib
     global session_auth
-    token = hashlib.md5(username + remote).hexdigest()[:24]
+    token = hashlib.md5((username + remote).encode('utf-8')).hexdigest()[:24]
     session_auth[token] = { "username": username, "remote": remote, }
     return token
 
@@ -186,7 +196,7 @@ def build_user_dict(username):
     return user_dict
 
 
-class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
+class CrowdServerStub(BaseHTTPRequestHandler):
 
     # Disable logging of fulfilled requests
     def log_request(self, format, *args):
@@ -196,13 +206,13 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_response(404)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
-        self.wfile.write("Sorry, location does not exist\n")
+        self.wfile.write("Sorry, location does not exist\n".encode('ascii'))
 
     def _do_app_failed_auth(self):
         self.send_response(401)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
-        self.wfile.write("Application failed to authenticate\n")
+        self.wfile.write("Application failed to authenticate\n".encode('ascii'))
 
     def _do_user_failed_auth(self, bad_user=False, bad_pass=False):
         response = {}
@@ -217,7 +227,7 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_response(400)
         self.send_header("Content-type", "application/json")
         self.end_headers()
-        self.wfile.write(json.dumps(response))
+        self.wfile.write(json.dumps(response).encode('ascii'))
 
     def _do_terminate(self):
         # Mark server object for termination
@@ -226,7 +236,7 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
-        self.wfile.write("Terminating\n")
+        self.wfile.write("Terminating\n".encode('ascii'))
 
     def _auth_user(self):
         username = self.get_params['username'][0]
@@ -257,7 +267,7 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_response(response_code)
         self.send_header("Content-type", "application/json")
         self.end_headers()
-        self.wfile.write(json.dumps(response))
+        self.wfile.write(json.dumps(response).encode('ascii'))
 
     def _get_session(self):
         username = self.json_data['username']
@@ -298,7 +308,7 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_response(response_code)
         self.send_header("Content-type", "application/json")
         self.end_headers()
-        self.wfile.write(json.dumps(response))
+        self.wfile.write(json.dumps(response).encode('ascii'))
 
     def _validate_session(self):
         v_factor = self.json_data['validationFactors']
@@ -331,7 +341,7 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_response(response_code)
         self.send_header("Content-type", "application/json")
         self.end_headers()
-        self.wfile.write(json.dumps(response))
+        self.wfile.write(json.dumps(response).encode('ascii'))
 
     def _delete_session(self):
         m = re.search('/([A-Za-z\d]{24})', self.path)
@@ -355,27 +365,27 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_response(response_code)
         self.send_header("Content-type", "application/json")
         self.end_headers()
-        self.wfile.write(json.dumps(response))
+        self.wfile.write(json.dumps(response).encode('ascii'))
 
     def _get_groups(self):
         username = self.get_params['username'][0]
         groups = get_user_group_membership(username)
-        response = {u'groups': map(lambda x: {u'name': x}, groups)}
+        response = {u'groups': [{u'name': x} for x in groups]}
 
         self.send_response(200)
         self.send_header("Content-type", "application/json")
         self.end_headers()
-        self.wfile.write(json.dumps(response))
+        self.wfile.write(json.dumps(response).encode('ascii'))
 
     def _get_group_users(self):
         groupname = self.get_params['groupname'][0]
         users = get_group_users(groupname)
-        response = {u'users': map(lambda x: {u'name': x}, users)}
+        response = {u'users': [{u'name': x} for x in users]}
 
         self.send_response(200)
         self.send_header("Content-type", "application/json")
         self.end_headers()
-        self.wfile.write(json.dumps(response))
+        self.wfile.write(json.dumps(response).encode('ascii'))
 
     def _get_user(self):
         username = self.get_params['username'][0]
@@ -388,7 +398,7 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
 
         self.send_header("Content-type", "application/json")
         self.end_headers()
-        self.wfile.write(json.dumps(response))
+        self.wfile.write(json.dumps(response).encode('ascii'))
 
     def _do_COMMON(self, data={}):
         handlers = [
@@ -479,7 +489,7 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
         self.send_response(500)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
-        self.wfile.write('Oops, should not be here for %s' % self.path)
+        self.wfile.write('Oops, should not be here for {}'.format(self.path).encode('ascii'))
 
     def do_GET(self):
         self._do_COMMON()
@@ -487,11 +497,11 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
     def do_POST(self):
         ct = self.headers.get('Content-Type')
         if ct != 'application/json':
-            print "Received unwanted Content-Type (%s) in POST" % ct
+            print("Received unwanted Content-Type (%s) in POST" % ct)
 
         cl = int(self.headers.get('Content-Length', 0))
         if cl > 0:
-            data = self.rfile.read(cl)
+            data = self.rfile.read(cl).decode('utf-8')
         else:
             data = ""
 
@@ -507,7 +517,7 @@ class CrowdServerStub(BaseHTTPServer.BaseHTTPRequestHandler):
 
 def init_server(port):
     global httpd
-    httpd = BaseHTTPServer.HTTPServer(("", port), CrowdServerStub)
+    httpd = HTTPServer(("", port), CrowdServerStub)
     return httpd
 
 def run_server(port):

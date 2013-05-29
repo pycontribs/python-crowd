@@ -25,7 +25,7 @@ import requests, threading
 import random, time
 
 PORT = random.randint(8000, 8020)
-print "Port {0}".format(PORT)
+print("Port {0}".format(PORT))
 APP_USER = 'testapp'
 APP_PASS = 'testpass'
 USER     = 'user1'

@@ -17,7 +17,10 @@
 
 import json
 import requests
-from urllib import urlencode
+try:
+    from urllib import urlencode  # Py27
+except ImportError:
+    from urllib.parse import urlencode  # Py3k
 
 
 class CrowdServer(object):
