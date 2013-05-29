@@ -53,20 +53,23 @@ class CrowdServer(object):
         return "Crowd Server at %s" % self.crowd_url
 
     def __repr__(self):
-        return "<CrowdServer('%s', '%s', %s')>" % (self.crowd_url, self.app_name, self.app_pass)
+        return "<CrowdServer('%s', '%s', %s')>" % \
+            (self.crowd_url, self.app_name, self.app_pass)
 
     def _get(self, url):
         req = requests.get(url, auth=self.auth_info,
-            headers=self.request_headers)
+                           headers=self.request_headers)
         return req
 
     def _post(self, url, post_data):
-        req = requests.post(url, data=json.dumps(post_data), auth=self.auth_info,
-            headers=self.request_headers)
+        req = requests.post(url, data=json.dumps(post_data),
+                            auth=self.auth_info,
+                            headers=self.request_headers)
         return req
 
     def _delete(self, url):
-        req = requests.delete(url, auth=self.auth_info, headers=self.request_headers)
+        req = requests.delete(url, auth=self.auth_info,
+                              headers=self.request_headers)
         return req
 
     def auth_ping(self):
@@ -191,9 +194,9 @@ class CrowdServer(object):
         """
 
         params = {
-           "validationFactors": [
-              {"name": "remote_address", "value": remote, }
-           ]
+            "validationFactors": [
+                {"name": "remote_address", "value": remote, }
+            ]
         }
 
         url = self.rest_url + "/session/%s?expand=user" % token
@@ -290,7 +293,6 @@ class CrowdServer(object):
             return None
 
         return [u['name'] for u in json.loads(response.text)['users']]
-
 
     def user_exists(self, username):
         """Determines if the user exists.
