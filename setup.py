@@ -1,20 +1,22 @@
 from setuptools import setup
+import os.path
+__dir__ = os.path.dirname(os.path.abspath(__file__))
 
 setup(
     name='Crowd',
     license='GPL v3',
-    py_modules=['crowd',],
+    py_modules=['crowd'],
     version='0.5',
     install_requires=['requests'],
 
-    description = 'A python client to the Atlassian Crowd REST API',
-    long_description=open('README.rst').read(),
+    description='A python client to the Atlassian Crowd REST API',
+    long_description=open(os.path.join(__dir__, 'README.rst')).read(),
 
-    author = 'Alexander Else',
-    author_email = 'aelse@else.id.au',
-    url = 'https://github.com/aelse/python-crowd',
+    author='Alexander Else',
+    author_email='aelse@else.id.au',
+    url='https://github.com/aelse/python-crowd',
 
-    classifiers = [
+    classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: GNU General Public License (GPL)",
