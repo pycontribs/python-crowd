@@ -136,7 +136,7 @@ class CrowdServer(object):
             remote:
                 The remote address of the user. This can be used
                 to create multiple concurrent sessions for a user.
-                The host you run this program may need to be configured
+                The host you run this program on may need to be configured
                 in Crowd as a trusted proxy for this to work.
 
         Returns:
