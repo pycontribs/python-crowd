@@ -42,11 +42,12 @@ class CrowdServer(object):
         self.app_pass = app_pass
         self.rest_url = crowd_url.rstrip("/") + "/rest/usermanagement/1"
 
-        self.auth_info = requests.auth.HTTPBasicAuth(app_name, app_pass)
-        self.request_headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        }
+        self.session = requests.Session()
+        self.session.auth = requests.auth.HTTPBasicAuth(app_name, app_pass)
+        self.session.headers.update({
+            "Content-type": "application/json",
+            "Accept": "application/json"
+        })
 
     def __str__(self):
         return "Crowd Server at %s" % self.crowd_url
@@ -55,60 +56,34 @@ class CrowdServer(object):
         return "<CrowdServer('%s', '%s', %s')>" % \
             (self.crowd_url, self.app_name, self.app_pass)
 
-    def _get(self, url, params=None):
+    def _get(self, *args, **kwargs):
         """Wrapper around Requests for GET requests
 
-        Args:
-            url: The HTTP endpoint
-
-            params: URL parameters, which are encoded
-
         Returns:
             Response:
                 A Requests Response object
         """
-        req = requests.get(url, auth=self.auth_info,
-                           headers=self.request_headers,
-                           params=params)
+        req = self.session.get(*args, **kwargs)
         return req
 
-    def _post(self, url, post_data, params=None):
+    def _post(self, *args, **kwargs):
         """Wrapper around Requests for POST requests
 
-        Args:
-            url: The HTTP endpoint
-
-            post_data: A dictionary that is form-encoded
-
-            params: URL parameters, which are encoded
-
         Returns:
             Response:
                 A Requests Response object
         """
-        req = requests.post(url,
-                            data=json.dumps(post_data),
-                            auth=self.auth_info,
-                            headers=self.request_headers,
-                            params=params)
+        req = self.session.post(*args, **kwargs)
         return req
 
-    def _delete(self, url, params=None):
+    def _delete(self, *args, **kwargs):
         """Wrapper around Requests for DELETE requests
-
-        Args:
-            url: The HTTP endpoint
-
-            params: URL parameters, which are encoded
 
         Returns:
             Response:
                 A Requests Response object
         """
-        req = requests.delete(url,
-                              auth=self.auth_info,
-                              headers=self.request_headers,
-                              params=params)
+        req = self.session.delete(*args, **kwargs)
         return req
 
     def auth_ping(self):
@@ -154,7 +129,7 @@ class CrowdServer(object):
         """
 
         response = self._post(self.rest_url + "/authentication",
-                              post_data={"value": password},
+                              data=json.dumps({"value": password}),
                               params={"username": username})
 
         # If authentication failed for any reason return None
@@ -200,7 +175,7 @@ class CrowdServer(object):
         }
 
         response = self._post(self.rest_url + "/session",
-                              post_data=params,
+                              data=json.dumps(params),
                               params={"expand": "user"})
 
         # If authentication failed for any reason return None
@@ -239,7 +214,7 @@ class CrowdServer(object):
         }
 
         url = self.rest_url + "/session/%s" % token
-        response = self._post(url, post_data=params, params={"expand": "user"})
+        response = self._post(url, data=json.dumps(params), params={"expand": "user"})
 
         # For consistency between methods use None rather than False
         # If token validation failed for any reason return None
