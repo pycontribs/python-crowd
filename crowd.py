@@ -123,7 +123,7 @@ class CrowdServer(object):
             return None
 
         # ...otherwise return a dictionary of user attributes
-        return json.loads(response.text)
+        return response.json()
 
     def get_session(self, username, password, remote="127.0.0.1"):
         """Create a session for a user.
@@ -247,7 +247,7 @@ class CrowdServer(object):
         if not response.ok:
             return None
 
-        return [g['name'] for g in json.loads(response.text)['groups']]
+        return [g['name'] for g in response.json()['groups']]
 
     def get_nested_groups(self, username):
         """Retrieve a list of all group names that have <username> as a direct or indirect member.
@@ -268,7 +268,7 @@ class CrowdServer(object):
         if not response.ok:
             return None
 
-        return [g['name'] for g in json.loads(response.text)['groups']]
+        return [g['name'] for g in response.json()['groups']]
 
     def get_nested_group_users(self, groupname):
         """Retrieves a list of all users that directly or indirectly belong to the given groupname.
@@ -289,7 +289,7 @@ class CrowdServer(object):
         if not response.ok:
             return None
 
-        return [u['name'] for u in json.loads(response.text)['users']]
+        return [u['name'] for u in response.json()['users']]
 
     def user_exists(self, username):
         """Determines if the user exists.
