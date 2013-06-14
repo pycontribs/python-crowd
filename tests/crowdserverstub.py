@@ -1,3 +1,4 @@
+# vim: set fileencoding=utf-8 :
 # Copyright 2012 Alexander Else <aelse@else.id.au>.
 #
 # This file is part of the python-crowd library.
@@ -181,7 +182,7 @@ def build_user_dict(username):
     user_dict = {
         "name": username, "first-name": username,
         "last-name": username, "display-name": username,
-        "email": '%s@does.not.exist' % username, "active": True,
+        "email": u'%s@does.not.ëxist' % username, "active": True,
     }
     return user_dict
 

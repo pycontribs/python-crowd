@@ -168,8 +168,7 @@ class CrowdServer(object):
             return None
 
         # Otherwise return the user object
-        ob = json.loads(response.text)
-        return ob
+        return response.json()
 
     def validate_session(self, token, remote="127.0.0.1"):
         """Validate a session token.
@@ -207,8 +206,7 @@ class CrowdServer(object):
             return None
 
         # Otherwise return the user object
-        ob = json.loads(response.text)
-        return ob
+        return response.json()
 
     def terminate_session(self, token):
         """Terminates the session token, effectively logging out the user
