@@ -1,3 +1,4 @@
+# vim: set fileencoding=utf-8 :
 # Copyright 2012 Alexander Else <aelse@else.id.au>.
 #
 # This file is part of the python-crowd library.
@@ -125,6 +126,13 @@ class testCrowdAuth(unittest.TestCase):
         token = '0' * 24
         result = self.crowd.validate_session(token)
         self.assertIs(result, None)
+
+    def testValidateSessionValidUserUTF8(self):
+        """Validate that the library handles UTF-8 in fields properly"""
+        session = self.crowd.get_session(USER, PASS)
+        token = session['token']
+        result = self.crowd.validate_session(token)
+        self.assertEquals(result['user']['email'], u'%s@does.not.ëxist' % USER)
 
     def testCreateSessionIdentical(self):
         """Sessions from same remote are identical"""
