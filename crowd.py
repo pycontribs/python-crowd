@@ -17,7 +17,6 @@
 
 import json
 import requests
-from urllib import urlencode
 
 
 class CrowdServer(object):
@@ -43,11 +42,12 @@ class CrowdServer(object):
         self.app_pass = app_pass
         self.rest_url = crowd_url.rstrip("/") + "/rest/usermanagement/1"
 
-        self.auth_info = requests.auth.HTTPBasicAuth(app_name, app_pass)
-        self.request_headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        }
+        self.session = requests.Session()
+        self.session.auth = requests.auth.HTTPBasicAuth(app_name, app_pass)
+        self.session.headers.update({
+            "Content-type": "application/json",
+            "Accept": "application/json"
+        })
 
     def __str__(self):
         return "Crowd Server at %s" % self.crowd_url
@@ -56,20 +56,34 @@ class CrowdServer(object):
         return "<CrowdServer('%s', '%s', %s')>" % \
             (self.crowd_url, self.app_name, self.app_pass)
 
-    def _get(self, url):
-        req = requests.get(url, auth=self.auth_info,
-                           headers=self.request_headers)
+    def _get(self, *args, **kwargs):
+        """Wrapper around Requests for GET requests
+
+        Returns:
+            Response:
+                A Requests Response object
+        """
+        req = self.session.get(*args, **kwargs)
         return req
 
-    def _post(self, url, post_data):
-        req = requests.post(url, data=json.dumps(post_data),
-                            auth=self.auth_info,
-                            headers=self.request_headers)
+    def _post(self, *args, **kwargs):
+        """Wrapper around Requests for POST requests
+
+        Returns:
+            Response:
+                A Requests Response object
+        """
+        req = self.session.post(*args, **kwargs)
         return req
 
-    def _delete(self, url):
-        req = requests.delete(url, auth=self.auth_info,
-                              headers=self.request_headers)
+    def _delete(self, *args, **kwargs):
+        """Wrapper around Requests for DELETE requests
+
+        Returns:
+            Response:
+                A Requests Response object
+        """
+        req = self.session.delete(*args, **kwargs)
         return req
 
     def auth_ping(self):
@@ -114,9 +128,9 @@ class CrowdServer(object):
             None: If authentication failed.
         """
 
-        url = self.rest_url + "/authentication?%s" % urlencode(
-            {"username": username})
-        response = self._post(url, {"value": password})
+        response = self._post(self.rest_url + "/authentication",
+                              data=json.dumps({"value": password}),
+                              params={"username": username})
 
         # If authentication failed for any reason return None
         if not response.ok:
@@ -160,8 +174,9 @@ class CrowdServer(object):
             }
         }
 
-        url = self.rest_url + "/session?expand=user"
-        response = self._post(url, params)
+        response = self._post(self.rest_url + "/session",
+                              data=json.dumps(params),
+                              params={"expand": "user"})
 
         # If authentication failed for any reason return None
         if not response.ok:
@@ -197,8 +212,8 @@ class CrowdServer(object):
             ]
         }
 
-        url = self.rest_url + "/session/%s?expand=user" % token
-        response = self._post(url, params)
+        url = self.rest_url + "/session/%s" % token
+        response = self._post(url, data=json.dumps(params), params={"expand": "user"})
 
         # For consistency between methods use None rather than False
         # If token validation failed for any reason return None
@@ -240,9 +255,8 @@ class CrowdServer(object):
                 A list of strings of group names.
         """
 
-        url = self.rest_url + "/user/group/direct?%s" % urlencode(
-            {"username": username})
-        response = self._get(url)
+        response = self._get(self.rest_url + "/user/group/direct",
+                             params={"username": username})
 
         if not response.ok:
             return None
@@ -261,9 +275,8 @@ class CrowdServer(object):
                 A list of strings of group names.
         """
 
-        url = self.rest_url + "/user/group/nested?%s" % urlencode(
-            {"username": username})
-        response = self._get(url)
+        response = self._get(self.rest_url + "/user/group/nested",
+                             params={"username": username})
 
         if not response.ok:
             return None
@@ -282,9 +295,10 @@ class CrowdServer(object):
                 A list of strings of user names.
         """
 
-        url = self.rest_url + "/group/user/nested?%s%s" % (urlencode(
-            {"groupname": groupname}), "&start-index=0&max-results=99999")
-        response = self._get(url)
+        response = self._get(self.rest_url + "/group/user/nested",
+                             params={"groupname": groupname,
+                                     "start-index": 0,
+                                     "max-results": 99999})
 
         if not response.ok:
             return None
@@ -303,9 +317,8 @@ class CrowdServer(object):
                 True if the user exists in the Crowd application.
         """
 
-        url = self.rest_url + "/user?%s" % urlencode(
-            {"username": username})
-        response = self._get(url)
+        response = self._get(self.rest_url + "/user",
+                             params={"username": username})
 
         if not response.ok:
             return None
