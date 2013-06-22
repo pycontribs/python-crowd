@@ -6,7 +6,7 @@ setup(
     name='Crowd',
     license='GPL v3',
     py_modules=['crowd'],
-    version='0.6',
+    version='0.7',
     install_requires=['requests'],
 
     description='A python client to the Atlassian Crowd REST API',
