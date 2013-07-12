@@ -4,7 +4,7 @@ __dir__ = os.path.dirname(os.path.abspath(__file__))
 
 setup(
     name='Crowd',
-    license='GPL v3',
+    license='BSD',
     py_modules=['crowd'],
     version='0.7',
     install_requires=['requests'],
@@ -17,10 +17,9 @@ setup(
     url='https://github.com/aelse/python-crowd',
 
     classifiers=[
-        "Development Status :: 2 - Pre-Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
-        "License :: OSI Approved :: GNU General Public License (GPL)",
-        "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+        "License :: OSI Approved :: BSD License",
         "Programming Language :: Python",
         "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3.3",
