@@ -132,7 +132,6 @@ class CrowdServer(object):
         """            
         response = self._get(self.rest_url + "/search",
                              params={"entity-type": "user"})
-        #print response
 
         if not response.ok:
             return None
@@ -373,7 +372,6 @@ class CrowdServer(object):
 
         if not response.ok:
             return None
-#        print "DICT: %s " %response.json()
 
         return [g['name'] for g in response.json()['groups']]
 
