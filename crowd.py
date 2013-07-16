@@ -16,7 +16,7 @@
 # along with python-crowd.  If not, see <http://www.gnu.org/licenses/>.
 #
 # 160713
-#      Modified by Christopher Richard Dobbs <dobbscrc@googlemail.com>
+#      Modified by Christopher Richard Dobbs <christopher.dobbs@evry.com>
 #      Added following functions:
 #      list_users()
 #      add_group(group)
