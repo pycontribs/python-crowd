@@ -14,7 +14,15 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with python-crowd.  If not, see <http://www.gnu.org/licenses/>.
-
+#
+# 160713
+#      Modified by Christopher Richard Dobbs <christopher.dobbs@evry.com>
+#      Added following functions:
+#      list_users()
+#      add_group(group)
+#      check_group(group)
+#      add_usr_grp(usr, grp)
+#  
 import json
 import requests
 
@@ -109,6 +117,27 @@ class CrowdServer(object):
             # An error encountered - problem with the Crowd server?
             return False
 
+    def list_users(self):
+        """Return all users for this application on the Crowd server.
+
+        Args:
+            None
+
+        Returns:
+            dict:
+                A list of user found.
+                
+
+            None: If failure.
+        """            
+        response = self._get(self.rest_url + "/search",
+                             params={"entity-type": "user"})
+
+        if not response.ok:
+            return None
+
+        return [g['name'] for g in response.json()['users']]
+
     def auth_user(self, username, password):
         """Authenticate a user account against the Crowd server.
 
@@ -137,7 +166,39 @@ class CrowdServer(object):
             return None
 
         # ...otherwise return a dictionary of user attributes
-        return response.json()
+        return response
+
+    def add_usr_grp(self, username, group):
+        """Add a user to group.
+
+
+        Args:
+            username: The account username.
+
+            group: Group name
+
+        Returns:
+ 
+            None: If authentication failed.
+        """
+
+        response = self._post(self.rest_url + "/user/group/direct",
+                              data=json.dumps({"name": group}),
+                              params={"username": username})
+
+
+        if response.status_code == 201:
+            print "User %s added ok to group %s" %(username, group)
+            return True
+        elif response.status_code == 403:
+            print "Forbidden!!!"
+        elif response.status_code == 400:
+            print "Group %s not found!!!" %group
+        elif response.status_code == 404:
+            print "User %s not found!!!" %username
+        else:
+            # An error encountered - problem with the Crowd server?
+            return False
 
     def get_session(self, username, password, remote="127.0.0.1"):
         """Create a session for a user.
@@ -246,6 +307,57 @@ class CrowdServer(object):
 
         # Otherwise return True
         return True
+
+    def check_group(self, groupname):
+        """Check if this group exists.
+
+        Returns:
+            None: If failed
+        """
+
+        response = self._get(self.rest_url + "/group",
+                             params={"groupname": groupname})
+
+        if not response.ok:
+            return None
+
+        return True
+
+    def add_group(self, group):
+        """Add a new group
+
+
+        Args:
+            group: Group name
+
+        Returns:
+ 
+            None: If failed.
+        """
+
+
+        params = {
+            "name": group,
+            "type": "GROUP",
+            "description": group,
+            "active": "true"
+        }
+
+
+        response = self._post(self.rest_url + "/group",
+                              data=json.dumps(params))
+
+
+        if response.status_code == 201:
+            print "Group %s added ok" %group
+            return True
+        elif response.status_code == 403:
+            print "Forbidden!!!"
+        elif response.status_code == 400:
+            print "Group %s already exists!!!" %group
+        else:
+            # An error encountered - problem with the Crowd server?
+            return False
 
     def get_groups(self, username):
         """Retrieves a list of group names that have <username> as a direct member.
