@@ -61,8 +61,8 @@ This project has been enhanced through the work of a number of contributors.
 If you contribute to this project you can add your name and/or github username
 to the end of this list and include the change in your pull request.
 
-Alexander Else (@aelse) - Original author
-Luke Cyca (@lukecyca)
-Dan Hansen (@dansomething)
-Terin Stock (@terinjokes)
-Sorin Sbarnea (@ssbarnea)
+* Alexander Else (@aelse) - Original author
+* Luke Cyca (@lukecyca)
+* Dan Hansen (@dansomething)
+* Terin Stock (@terinjokes)
+* Sorin Sbarnea (@ssbarnea)
