@@ -2,18 +2,10 @@
 #
 # This file is part of the python-crowd library.
 #
-# python-crowd is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# python-crowd is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with python-crowd.  If not, see <http://www.gnu.org/licenses/>.
+# python-crowd is free software released under the BSD License.
+# Please see the LICENSE file included in this distribution for
+# terms of use. This LICENSE is also available at
+# https://github.com/aelse/python-crowd/blob/master/LICENSE
 
 import json
 import requests
