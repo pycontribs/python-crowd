@@ -53,3 +53,16 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
 TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE 
 USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH 
 DAMAGE.
+
+Contributors
+============
+
+This project has been enhanced through the work of a number of contributors.
+If you contribute to this project you can add your name and/or github username
+to the end of this list and include the change in your pull request.
+
+Alexander Else (@aelse) - Original author
+Luke Cyca (@lukecyca)
+Dan Hansen (@dansomething)
+Terin Stock (@terinjokes)
+Sorin Sbarnea (@ssbarnea)
