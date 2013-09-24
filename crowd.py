@@ -109,7 +109,7 @@ class CrowdServer(object):
             # An error encountered - problem with the Crowd server?
             return False
 
-    def list_users(self):
+    def get_users(self):
         """Return all users for this application on the Crowd server.
 
         Args:
@@ -153,14 +153,10 @@ class CrowdServer(object):
                               data=json.dumps({"value": password}),
                               params={"username": username})
 
-        # If authentication failed for any reason return None
-        if not response.ok:
-            return None
-
         # ...otherwise return a dictionary of user attributes
-        return response
+        return True
 
-    def add_usr_grp(self, username, group):
+    def add_user_to_group(self, username, group):
         """Add a user to group.
 
 
@@ -178,19 +174,11 @@ class CrowdServer(object):
                               data=json.dumps({"name": group}),
                               params={"username": username})
 
-
-        if response.status_code == 201:
-            print "User %s added ok to group %s" %(username, group)
-            return True
-        elif response.status_code == 403:
-            print "Forbidden!!!"
-        elif response.status_code == 400:
-            print "Group %s not found!!!" %group
-        elif response.status_code == 404:
-            print "User %s not found!!!" %username
-        else:
-            # An error encountered - problem with the Crowd server?
+        if not response.ok:
             return False
+
+        return(response)
+
 
     def get_session(self, username, password, remote="127.0.0.1"):
         """Create a session for a user.
@@ -300,11 +288,16 @@ class CrowdServer(object):
         # Otherwise return True
         return True
 
-    def check_group(self, groupname):
-        """Check if this group exists.
+    def group_exists(self, groupname):
+        """Determines if the group exists.
+
+        Args:
+            groupname: The group name.
+
 
         Returns:
-            None: If failed
+            bool:
+                True if the group exists in the Crowd application.
         """
 
         response = self._get(self.rest_url + "/group",
@@ -339,17 +332,10 @@ class CrowdServer(object):
         response = self._post(self.rest_url + "/group",
                               data=json.dumps(params))
 
-
-        if response.status_code == 201:
-            print "Group %s added ok" %group
-            return True
-        elif response.status_code == 403:
-            print "Forbidden!!!"
-        elif response.status_code == 400:
-            print "Group %s already exists!!!" %group
-        else:
-            # An error encountered - problem with the Crowd server?
+        if not response.ok:
             return False
+
+        return(response)
 
     def get_groups(self, username):
         """Retrieves a list of group names that have <username> as a direct member.
