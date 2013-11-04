@@ -26,12 +26,17 @@ class CrowdServer(object):
 
     Please see the Crowd documentation for information about
     configuring additional applications to talk to Crowd.
+
+    The ``verify`` parameter controls how and if certificates are verified.
+    If ``True``, the SSL certificate will be verified.
+    A CA_BUNDLE path can also be provided.
     """
 
-    def __init__(self, crowd_url, app_name, app_pass):
+    def __init__(self, crowd_url, app_name, app_pass, verify=True):
         self.crowd_url = crowd_url
         self.app_name = app_name
         self.app_pass = app_pass
+        self.verify = verify
         self.rest_url = crowd_url.rstrip("/") + "/rest/usermanagement/1"
 
         self.session = requests.Session()
@@ -55,6 +60,7 @@ class CrowdServer(object):
             Response:
                 A Requests Response object
         """
+        kwargs['verify'] = self.verify
         req = self.session.get(*args, **kwargs)
         return req
 
@@ -65,6 +71,7 @@ class CrowdServer(object):
             Response:
                 A Requests Response object
         """
+        kwargs['verify'] = self.verify
         req = self.session.post(*args, **kwargs)
         return req
 
@@ -75,6 +82,7 @@ class CrowdServer(object):
             Response:
                 A Requests Response object
         """
+        kwargs['verify'] = self.verify
         req = self.session.delete(*args, **kwargs)
         return req
 
