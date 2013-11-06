@@ -26,15 +26,20 @@ class CrowdServer(object):
 
     Please see the Crowd documentation for information about
     configuring additional applications to talk to Crowd.
+
+    The ``ssl_verify`` parameter controls how and if certificates are verified.
+    If ``True``, the SSL certificate will be verified.
+    A CA_BUNDLE path can also be provided.
     """
 
-    def __init__(self, crowd_url, app_name, app_pass):
+    def __init__(self, crowd_url, app_name, app_pass, ssl_verify=True):
         self.crowd_url = crowd_url
         self.app_name = app_name
         self.app_pass = app_pass
         self.rest_url = crowd_url.rstrip("/") + "/rest/usermanagement/1"
 
         self.session = requests.Session()
+        self.session.verify = ssl_verify
         self.session.auth = requests.auth.HTTPBasicAuth(app_name, app_pass)
         self.session.headers.update({
             "Content-type": "application/json",

@@ -73,6 +73,16 @@ class testCrowdAuth(unittest.TestCase):
         result = crowdserverstub.check_user_auth(USER, PASS)
         self.assertTrue(result)
 
+    def testCrowdObjectSSLVerifyTrue(self):
+        """Check can create Crowd object with ssl_verify=True"""
+        c = crowd.CrowdServer("http://bogus", APP_USER, APP_PASS, ssl_verify=True)
+        self.assertIsInstance(c, crowd.CrowdServer)
+
+    def testCrowdObjectSSLVerifyFalse(self):
+        """Check can create Crowd object with ssl_verify=False"""
+        c = crowd.CrowdServer("http://bogus", APP_USER, APP_PASS, ssl_verify=False)
+        self.assertIsInstance(c, crowd.CrowdServer)
+
     def testAuthAppValid(self):
         """Application may authenticate with valid credentials"""
         result = self.crowd.auth_ping()
