@@ -174,8 +174,8 @@ class CrowdServer(object):
                               data=json.dumps({"name": group}),
                               params={"username": username})
 
-        if not response.ok:
-            return False
+        if response.ok:
+            return True
 
         return(response)
 
@@ -331,6 +331,38 @@ class CrowdServer(object):
 
         response = self._post(self.rest_url + "/group",
                               data=json.dumps(params))
+
+        if not response.ok:
+            return False
+
+        return(response)
+
+    def add_user(self, usr, psw, email, dname, fname, lname):
+        """Add a new usr
+
+
+        Args:
+            dict
+
+        Returns:
+ 
+            None: If failed.
+        """
+        usr_dict = {
+            "name" : usr,
+            "first-name" : fname,
+            "last-name" : lname,
+            "display-name" : dname,
+            "email" : email,
+            "password" : {
+                "value" : psw
+                },
+            "active" : "true"
+            }
+
+#        print "Add user to %s"%self.rest_url
+        response = self._post(self.rest_url + "/user",
+                              data=json.dumps(usr_dict))
 
         if not response.ok:
             return False
