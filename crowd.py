@@ -9,6 +9,7 @@
 
 import json
 import requests
+import lxml.etree
 
 
 class CrowdServer(object):
@@ -46,6 +47,14 @@ class CrowdServer(object):
             "Accept": "application/json"
         })
 
+        self.session_xml = requests.Session()
+        self.session_xml.verify = ssl_verify
+        self.session_xml.auth = requests.auth.HTTPBasicAuth(app_name, app_pass)
+        self.session_xml.headers.update({
+            "Content-type": "application/xml",
+            "Accept": "application/xml"
+        })
+
     def __str__(self):
         return "Crowd Server at %s" % self.crowd_url
 
@@ -61,6 +70,16 @@ class CrowdServer(object):
                 A Requests Response object
         """
         req = self.session.get(*args, **kwargs)
+        return req
+
+    def _get_xml(self, *args, **kwargs):
+        """Wrapper around Requests for GET XML requests
+
+        Returns:
+            Response:
+                A Requests Response object
+        """
+        req = self.session_xml.get(*args, **kwargs)
         return req
 
     def _post(self, *args, **kwargs):
@@ -321,3 +340,25 @@ class CrowdServer(object):
             return None
 
         return True
+
+    def get_membership(self):
+        """Fetches all group memberships.
+
+        Returns:
+            dict:
+		key: group name
+		value: (array of users, array of groups)
+        """
+
+        response = self._get_xml(self.rest_url + "/group/membership")
+
+        if not response.ok:
+            return None
+
+        xmltree = lxml.etree.fromstring(response.content)
+        tmp = {}
+        for mg in xmltree.findall('membership'):
+            users = [unicode(u.get('name')) for u in mg.find('users').findall('user')]
+            groups = [unicode(g.get('name')) for g in mg.find('groups').findall('group')]
+            tmp[unicode(mg.get('group'))]=(users,groups)
+        return tmp
