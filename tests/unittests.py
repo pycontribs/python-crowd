@@ -1,3 +1,4 @@
+# vim: set fileencoding=utf-8 :
 # Copyright 2012 Alexander Else <aelse@else.id.au>.
 #
 # This file is part of the python-crowd library.
@@ -25,7 +26,7 @@ import requests, threading
 import random, time
 
 PORT = random.randint(8000, 8020)
-print "Port {0}".format(PORT)
+print("Port {0}".format(PORT))
 APP_USER = 'testapp'
 APP_PASS = 'testpass'
 USER     = 'user1'
@@ -60,28 +61,38 @@ class testCrowdAuth(unittest.TestCase):
     def testStubUserExists(self):
         """Check that server stub recognises user"""
         result = crowdserverstub.user_exists(USER)
-        self.assertIs(result, True)
+        self.assertTrue(result)
 
     def testStubUserDoesNotExist(self):
         """Check that server stub does not know invalid user"""
         result = crowdserverstub.user_exists('fakeuser')
-        self.assertIs(result, False)
+        self.assertFalse(result)
 
     def testStubCheckUserAuth(self):
         """Check that server stub auths our user/pass combination"""
         result = crowdserverstub.check_user_auth(USER, PASS)
-        self.assertEquals(result, True)
+        self.assertTrue(result)
+
+    def testCrowdObjectSSLVerifyTrue(self):
+        """Check can create Crowd object with ssl_verify=True"""
+        c = crowd.CrowdServer("http://bogus", APP_USER, APP_PASS, ssl_verify=True)
+        self.assertIsInstance(c, crowd.CrowdServer)
+
+    def testCrowdObjectSSLVerifyFalse(self):
+        """Check can create Crowd object with ssl_verify=False"""
+        c = crowd.CrowdServer("http://bogus", APP_USER, APP_PASS, ssl_verify=False)
+        self.assertIsInstance(c, crowd.CrowdServer)
 
     def testAuthAppValid(self):
         """Application may authenticate with valid credentials"""
         result = self.crowd.auth_ping()
-        self.assertEquals(result, True)
+        self.assertTrue(result)
 
     def testAuthAppInvalid(self):
         """Application may not authenticate with invalid credentials"""
         c = crowd.CrowdServer(self.base_url, 'invalidapp', 'xxxxx')
         result = c.auth_ping()
-        self.assertEquals(result, False)
+        self.assertFalse(result)
 
     def testAuthUserValid(self):
         """User may authenticate with valid credentials"""
@@ -126,6 +137,13 @@ class testCrowdAuth(unittest.TestCase):
         result = self.crowd.validate_session(token)
         self.assertIs(result, None)
 
+    def testValidateSessionValidUserUTF8(self):
+        """Validate that the library handles UTF-8 in fields properly"""
+        session = self.crowd.get_session(USER, PASS)
+        token = session['token']
+        result = self.crowd.validate_session(token)
+        self.assertEquals(result['user']['email'], u'%s@does.not.ëxist' % USER)
+
     def testCreateSessionIdentical(self):
         """Sessions from same remote are identical"""
         session1 = self.crowd.get_session(USER, PASS, '192.168.99.99')
@@ -153,25 +171,25 @@ class testCrowdAuth(unittest.TestCase):
     def testGetGroupsNotEmpty(self):
         crowdserverstub.add_user_to_group(USER, GROUP)
         result = self.crowd.get_groups(USER)
-        self.assertEquals(set(result), set([GROUP]))
+        self.assertEqual(set(result), set([GROUP]))
         crowdserverstub.remove_user_from_group(USER, GROUP)
 
     def testGetNestedGroupsNotEmpty(self):
         crowdserverstub.add_user_to_group(USER, GROUP)
         result = self.crowd.get_nested_groups(USER)
-        self.assertEquals(set(result), set([GROUP]))
+        self.assertEqual(set(result), set([GROUP]))
         crowdserverstub.remove_user_from_group(USER, GROUP)
 
     def testRemoveUserFromGroup(self):
         crowdserverstub.add_user_to_group(USER, GROUP)
         crowdserverstub.remove_user_from_group(USER, GROUP)
         result = self.crowd.get_groups(USER)
-        self.assertEquals(set(result), set([]))
+        self.assertEqual(set(result), set([]))
 
     def testGetNestedGroupUsersNotEmpty(self):
         crowdserverstub.add_user_to_group(USER, GROUP)
         result = self.crowd.get_nested_group_users(GROUP)
-        self.assertEquals(set(result), set([USER]))
+        self.assertEqual(set(result), set([USER]))
         crowdserverstub.remove_user_from_group(USER, GROUP)
 
     def testUserExists(self):

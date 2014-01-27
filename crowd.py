@@ -2,22 +2,13 @@
 #
 # This file is part of the python-crowd library.
 #
-# python-crowd is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# python-crowd is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with python-crowd.  If not, see <http://www.gnu.org/licenses/>.
+# python-crowd is free software released under the BSD License.
+# Please see the LICENSE file included in this distribution for
+# terms of use. This LICENSE is also available at
+# https://github.com/aelse/python-crowd/blob/master/LICENSE
 
 import json
 import requests
-from urllib import urlencode
 
 
 class CrowdServer(object):
@@ -35,19 +26,25 @@ class CrowdServer(object):
 
     Please see the Crowd documentation for information about
     configuring additional applications to talk to Crowd.
+
+    The ``ssl_verify`` parameter controls how and if certificates are verified.
+    If ``True``, the SSL certificate will be verified.
+    A CA_BUNDLE path can also be provided.
     """
 
-    def __init__(self, crowd_url, app_name, app_pass):
+    def __init__(self, crowd_url, app_name, app_pass, ssl_verify=True):
         self.crowd_url = crowd_url
         self.app_name = app_name
         self.app_pass = app_pass
         self.rest_url = crowd_url.rstrip("/") + "/rest/usermanagement/1"
 
-        self.auth_info = requests.auth.HTTPBasicAuth(app_name, app_pass)
-        self.request_headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        }
+        self.session = requests.Session()
+        self.session.verify = ssl_verify
+        self.session.auth = requests.auth.HTTPBasicAuth(app_name, app_pass)
+        self.session.headers.update({
+            "Content-type": "application/json",
+            "Accept": "application/json"
+        })
 
     def __str__(self):
         return "Crowd Server at %s" % self.crowd_url
@@ -56,20 +53,34 @@ class CrowdServer(object):
         return "<CrowdServer('%s', '%s', %s')>" % \
             (self.crowd_url, self.app_name, self.app_pass)
 
-    def _get(self, url):
-        req = requests.get(url, auth=self.auth_info,
-                           headers=self.request_headers)
+    def _get(self, *args, **kwargs):
+        """Wrapper around Requests for GET requests
+
+        Returns:
+            Response:
+                A Requests Response object
+        """
+        req = self.session.get(*args, **kwargs)
         return req
 
-    def _post(self, url, post_data):
-        req = requests.post(url, data=json.dumps(post_data),
-                            auth=self.auth_info,
-                            headers=self.request_headers)
+    def _post(self, *args, **kwargs):
+        """Wrapper around Requests for POST requests
+
+        Returns:
+            Response:
+                A Requests Response object
+        """
+        req = self.session.post(*args, **kwargs)
         return req
 
-    def _delete(self, url):
-        req = requests.delete(url, auth=self.auth_info,
-                              headers=self.request_headers)
+    def _delete(self, *args, **kwargs):
+        """Wrapper around Requests for DELETE requests
+
+        Returns:
+            Response:
+                A Requests Response object
+        """
+        req = self.session.delete(*args, **kwargs)
         return req
 
     def auth_ping(self):
@@ -114,16 +125,16 @@ class CrowdServer(object):
             None: If authentication failed.
         """
 
-        url = self.rest_url + "/authentication?%s" % urlencode(
-            {"username": username})
-        response = self._post(url, {"value": password})
+        response = self._post(self.rest_url + "/authentication",
+                              data=json.dumps({"value": password}),
+                              params={"username": username})
 
         # If authentication failed for any reason return None
         if not response.ok:
             return None
 
         # ...otherwise return a dictionary of user attributes
-        return json.loads(response.text)
+        return response.json()
 
     def get_session(self, username, password, remote="127.0.0.1"):
         """Create a session for a user.
@@ -160,16 +171,16 @@ class CrowdServer(object):
             }
         }
 
-        url = self.rest_url + "/session?expand=user"
-        response = self._post(url, params)
+        response = self._post(self.rest_url + "/session",
+                              data=json.dumps(params),
+                              params={"expand": "user"})
 
         # If authentication failed for any reason return None
         if not response.ok:
             return None
 
         # Otherwise return the user object
-        ob = json.loads(response.text)
-        return ob
+        return response.json()
 
     def validate_session(self, token, remote="127.0.0.1"):
         """Validate a session token.
@@ -198,8 +209,8 @@ class CrowdServer(object):
             ]
         }
 
-        url = self.rest_url + "/session/%s?expand=user" % token
-        response = self._post(url, params)
+        url = self.rest_url + "/session/%s" % token
+        response = self._post(url, data=json.dumps(params), params={"expand": "user"})
 
         # For consistency between methods use None rather than False
         # If token validation failed for any reason return None
@@ -207,8 +218,7 @@ class CrowdServer(object):
             return None
 
         # Otherwise return the user object
-        ob = json.loads(response.text)
-        return ob
+        return response.json()
 
     def terminate_session(self, token):
         """Terminates the session token, effectively logging out the user
@@ -242,14 +252,13 @@ class CrowdServer(object):
                 A list of strings of group names.
         """
 
-        url = self.rest_url + "/user/group/direct?%s" % urlencode(
-            {"username": username})
-        response = self._get(url)
+        response = self._get(self.rest_url + "/user/group/direct",
+                             params={"username": username})
 
         if not response.ok:
             return None
 
-        return [g['name'] for g in json.loads(response.text)['groups']]
+        return [g['name'] for g in response.json()['groups']]
 
     def get_nested_groups(self, username):
         """Retrieve a list of all group names that have <username> as a direct or indirect member.
@@ -263,14 +272,13 @@ class CrowdServer(object):
                 A list of strings of group names.
         """
 
-        url = self.rest_url + "/user/group/nested?%s" % urlencode(
-            {"username": username})
-        response = self._get(url)
+        response = self._get(self.rest_url + "/user/group/nested",
+                             params={"username": username})
 
         if not response.ok:
             return None
 
-        return [g['name'] for g in json.loads(response.text)['groups']]
+        return [g['name'] for g in response.json()['groups']]
 
     def get_nested_group_users(self, groupname):
         """Retrieves a list of all users that directly or indirectly belong to the given groupname.
@@ -284,14 +292,15 @@ class CrowdServer(object):
                 A list of strings of user names.
         """
 
-        url = self.rest_url + "/group/user/nested?%s%s" % (urlencode(
-            {"groupname": groupname}), "&start-index=0&max-results=99999")
-        response = self._get(url)
+        response = self._get(self.rest_url + "/group/user/nested",
+                             params={"groupname": groupname,
+                                     "start-index": 0,
+                                     "max-results": 99999})
 
         if not response.ok:
             return None
 
-        return [u['name'] for u in json.loads(response.text)['users']]
+        return [u['name'] for u in response.json()['users']]
 
     def user_exists(self, username):
         """Determines if the user exists.
@@ -305,9 +314,8 @@ class CrowdServer(object):
                 True if the user exists in the Crowd application.
         """
 
-        url = self.rest_url + "/user?%s" % urlencode(
-            {"username": username})
-        response = self._get(url)
+        response = self._get(self.rest_url + "/user",
+                             params={"username": username})
 
         if not response.ok:
             return None
