@@ -39,13 +39,17 @@ class testCrowdAuth(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.base_url = 'http://localhost:%d' % PORT
+        import os
+        if 'CROWDSERVER' in os.environ:
+            cls.base_url = os.environ['CROWDSERVER']
+            cls.server_thread = None
+        else:
+            cls.base_url = 'http://localhost:%d' % PORT
+            cls.server_thread = threading.Thread(
+                target=crowdserverstub.run_server, args=(PORT,))
+            cls.server_thread.start()
+
         cls.crowd = crowd.CrowdServer(cls.base_url, APP_USER, APP_PASS)
-
-        cls.server_thread = threading.Thread(
-            target=crowdserverstub.run_server, args=(PORT,))
-        cls.server_thread.start()
-
         crowdserverstub.add_app(APP_USER, APP_PASS)
         crowdserverstub.add_user(USER, PASS)
 
@@ -56,7 +60,8 @@ class testCrowdAuth(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         requests.get(cls.base_url + '/terminate')
-        cls.server_thread.join()
+        if cls.server_thread:
+            cls.server_thread.join()
 
     def testStubUserExists(self):
         """Check that server stub recognises user"""
