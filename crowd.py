@@ -25,6 +25,14 @@ class CrowdUserExists(Exception):
     pass
 
 
+class CrowdNoSuchUser(Exception):
+    pass
+
+
+class CrowdNoSuchGroup(Exception):
+    pass
+
+
 class CrowdError(Exception):
     """Generic exception when unexpected response encountered"""
     def __init__(self, message=None):
