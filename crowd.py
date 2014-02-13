@@ -133,12 +133,13 @@ class CrowdServer(object):
 
         if response.status_code == 401:
             return False
-        elif response.status_code == 404:
+
+        if response.status_code == 404:
             # A 'not found' response indicates we passed app auth
             return True
-        else:
-            # An error encountered - problem with the Crowd server?
-            raise CrowdError("unidentified problem")
+
+        # An error encountered - problem with the Crowd server?
+        raise CrowdError("unidentified problem")
 
     def auth_user(self, username, password):
         """Authenticate a user account against the Crowd server.
@@ -169,11 +170,12 @@ class CrowdServer(object):
 
         if response.status_code == 200:
             return response.json()
-        elif response.status_code == 400:
+
+        if response.status_code == 400:
             j = response.json()
             raise CrowdAuthFailure(j['message'])
-        else:
-            raise CrowdError
+
+        raise CrowdError
 
     def get_session(self, username, password, remote="127.0.0.1"):
         """Create a session for a user.
@@ -218,9 +220,12 @@ class CrowdServer(object):
         # TODO check correctness of status codes against live server
         if response.status_code == 201 or response.status_code == 200:
             return response.json()
-        elif response.status_code == 400:
+
+        if response.status_code == 400:
             j = response.json()
             raise CrowdAuthFailure(j['message'])
+
+        raise CrowdError
 
     def validate_session(self, token, remote="127.0.0.1"):
         """Validate a session token.
@@ -280,8 +285,8 @@ class CrowdServer(object):
 
         if response.status_code == 204:
             return True
-        else:
-            raise CrowdError
+
+        raise CrowdError
 
     def add_user(self, username, **kwargs):
         """Add a user to the directory
@@ -304,8 +309,6 @@ class CrowdServer(object):
             CrowdError: If authentication failed.
         """
 
-        components = ['username', 'password', 'first_name',
-                      'last_name', 'display_name', 'active']
         # Populate data with default and mandatory values.
         # A KeyError means a mandatory value was not provided,
         # so raise a ValueError indicating bad args.
@@ -341,7 +344,7 @@ class CrowdServer(object):
             return True
 
         if response.status_code == 400:
-            # User already exists or no password given (we checked that)
+            # User already exists / no password given (but we checked that)
             raise CrowdUserExists
 
         if response.status_code == 403:
