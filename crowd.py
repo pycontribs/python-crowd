@@ -449,6 +449,74 @@ class CrowdServer(object):
 
         return [u['name'] for u in response.json()['users']]
 
+    def add_user_to_group(self, username, groupname):
+        """Make user a direct member of a group
+
+        Args:
+            username: The user name.
+            groupname: The group name.
+
+        Returns:
+            True: If successful
+
+        Raises:
+            CrowdNoSuchUser: The user does not exist
+            CrowdNoSuchGroup: The group does not exist
+            CrowdUserExists: The user is already a member
+            CrowdError: Unexpected response
+        """
+        response = self._post(self.rest_url + "/group/user/direct",
+                              data=json.dumps({"name": username}),
+                              params={"groupname": groupname})
+
+        if response.status_code == 201:
+            return True
+
+        if response.status_code == 400:
+            raise CrowdNoSuchUser
+
+        if response.status_code == 400:
+            raise CrowdNoSuchGroup
+
+        if response.status_code == 409:
+            raise CrowdUserExists
+
+        raise CrowdError
+
+    def remove_user_from_group(self, username, groupname):
+        """Remove user as a direct member of a group
+
+        Args:
+            username: The user name.
+            groupname: The group name.
+
+        Returns:
+            True: If successful
+
+        Raises:
+            CrowdNotFound: The user or group does not exist
+            CrowdUserExists: The user is already a member
+            CrowdError: Unexpected response
+        """
+        response = self._delete(self.rest_url + "/group/user/direct",
+                              params={"groupname": groupname,
+                                      "username": username})
+
+        if response.status_code == 204:
+            return True
+
+        if response.status_code == 404:
+            # user or group does not exist
+            j = response.json()
+            if j['message'].lower().startswith('group'):
+                raise CrowdNoSuchGroup
+            elif j['message'].lower().startswith('user'):
+                raise CrowdNoSuchUser
+            else:
+                raise CrowdError("unknown server response")
+
+        raise CrowdError
+
     def user_exists(self, username):
         """Determines if the user exists.
 
