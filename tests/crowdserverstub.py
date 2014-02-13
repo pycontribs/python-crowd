@@ -416,6 +416,21 @@ class CrowdServerStub(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(response).encode('ascii'))
 
+    def _add_user(self):
+        username = self.json_data['name']
+        password = self.json_data['password']
+
+        if not user_exists(username):
+            add_user(username, password, attributes=self.json_data)
+            self.send_response(201)
+        else:
+            response = {u'reason': u'INVALID_USER',
+                        u'message': u'User already exists'}
+            self.send_response(400)
+            self.send_header("Content-type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(response).encode('ascii'))
+
     def _do_COMMON(self, data={}):
         handlers = [
             {
@@ -470,6 +485,12 @@ class CrowdServerStub(BaseHTTPRequestHandler):
                 "action": self._get_user,
                 "require_auth": True,
                 "method": "GET",
+            },
+            {
+                "url": r"/rest/usermanagement/1/user$",
+                "action": self._add_user,
+                "require_auth": True,
+                "method": "POST",
             },
 
 
