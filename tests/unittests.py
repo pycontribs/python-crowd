@@ -123,22 +123,22 @@ class testCrowdAuth(unittest.TestCase):
 
     def testCreateSessionInvalidUser(self):
         """User may not create a session with invalid username"""
-        #def f():
-        #    result = self.crowd.get_session('invaliduser', 'xxxxx')
-        #self.assertRaises(crowd.CrowdAuthFailure, f)
+        def f():
+            result = self.crowd.get_session('invaliduser', 'xxxxx')
+        self.assertRaises(crowd.CrowdAuthFailure, f)
 
     def testCreateSessionInvalidPass(self):
         """User may not create a session with invalid password"""
-        #def f():
-        #    result = self.crowd.get_session(USER, 'xxxxx')
-        #self.assertRaises(crowd.CrowdAuthFailure, f)
+        def f():
+            result = self.crowd.get_session(USER, 'xxxxx')
+        self.assertRaises(crowd.CrowdAuthFailure, f)
 
     def testValidateSessionValidUser(self):
         """Validate a valid session token"""
-        #session = self.crowd.get_session(USER, PASS)
-        #token = session['token']
-        #result = self.crowd.validate_session(token)
-        #self.assertIsInstance(result, dict)
+        session = self.crowd.get_session(USER, PASS)
+        token = session['token']
+        result = self.crowd.validate_session(token)
+        self.assertIsInstance(result, dict)
 
     def testValidateSessionInvalidToken(self):
         """Detect invalid session token"""
@@ -158,7 +158,7 @@ class testCrowdAuth(unittest.TestCase):
         """Sessions from same remote are identical"""
         session1 = self.crowd.get_session(USER, PASS, '192.168.99.99')
         session2 = self.crowd.get_session(USER, PASS, '192.168.99.99')
-        self.assertEqual(session1, session2)
+        self.assertEqual(session1['token'], session2['token'])
 
     def testCreateSessionMultiple(self):
         """User may create multiple sessions from different remote"""
@@ -176,7 +176,7 @@ class testCrowdAuth(unittest.TestCase):
     def testTerminateSessionInvalidToken(self):
         token = '0' * 24
         result = self.crowd.terminate_session(token)
-        self.assertIs(result, None)
+        self.assertIsTrue(result)
 
     def testGetGroupsNotEmpty(self):
         crowdserverstub.add_user_to_group(USER, GROUP)
@@ -191,16 +191,20 @@ class testCrowdAuth(unittest.TestCase):
         crowdserverstub.remove_user_from_group(USER, GROUP)
 
     def testRemoveUserFromGroup(self):
-        crowdserverstub.add_user_to_group(USER, GROUP)
-        crowdserverstub.remove_user_from_group(USER, GROUP)
+        #crowdserverstub.add_user_to_group(USER, GROUP)
+        #crowdserverstub.remove_user_from_group(USER, GROUP)
+        self.crowd.add_user_to_group(USER, GROUP)
+        self.crowd.remove_user_from_group(USER, GROUP)
         result = self.crowd.get_groups(USER)
         self.assertEqual(set(result), set([]))
 
     def testGetNestedGroupUsersNotEmpty(self):
-        crowdserverstub.add_user_to_group(USER, GROUP)
+        #crowdserverstub.add_user_to_group(USER, GROUP)
+        self.crowd.add_user_to_group(USER, GROUP)
         result = self.crowd.get_nested_group_users(GROUP)
+        #crowdserverstub.remove_user_from_group(USER, GROUP)
+        self.crowd.remove_user_from_group(USER, GROUP)
         self.assertEqual(set(result), set([USER]))
-        crowdserverstub.remove_user_from_group(USER, GROUP)
 
     def testUserExists(self):
         result = self.crowd.user_exists(USER)
