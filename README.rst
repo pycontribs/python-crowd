@@ -66,3 +66,4 @@ to the end of this list and include the change in your pull request.
 * Dan Hansen (@dansomething)
 * Terin Stock (@terinjokes)
 * Sorin Sbarnea (@ssbarnea)
+* Christian Schläppi (@nevious)
