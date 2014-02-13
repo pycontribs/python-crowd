@@ -196,6 +196,11 @@ class testCrowdAuth(unittest.TestCase):
         result = self.crowd.user_exists(USER)
         self.assertTrue(result)
 
+    def testUserAttributes(self):
+        result = self.crowd.get_user(USER)
+        self.assertIsNotNone(result)
+        self.assertTrue('attributes' in result)
+
 
 if __name__ == "__main__":
     unittest.main()

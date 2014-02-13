@@ -34,6 +34,7 @@ httpd = None
 
 app_auth = {}
 user_auth = {}
+user_attributes = {}
 group_auth = {}
 session_auth = {}
 
@@ -126,15 +127,25 @@ def get_group_users(groupname):
             pass
     return users
 
-def add_user(username, password):
+def add_user(username, password, attributes=None):
     global user_auth
+    global user_attributes
     user_auth[username] = password
+    if attributes:
+        user_attributes[username] = attributes
 
 def remove_user(username):
     global user_auth
     try:
         del user_auth[username]
     except KeyError: pass
+
+def get_user_attributes(username):
+    try:
+        attributes = user_attributes[username]
+    except KeyError:
+        attributes = {}
+    return attributes
 
 def user_exists(username):
     """Check that user exists"""
@@ -392,6 +403,10 @@ class CrowdServerStub(BaseHTTPRequestHandler):
         username = self.get_params['username'][0]
         if user_exists(username):
             response = {u'user': {u'name': username}}
+            try:
+                if self.get_params['expand'][0] == 'attributes':
+                    response['attributes'] = get_user_attributes(username)
+            except: pass
             self.send_response(200)
         else:
             response = {}
