@@ -50,7 +50,7 @@ class CrowdServer(object):
         return "Crowd Server at %s" % self.crowd_url
 
     def __repr__(self):
-        return "<CrowdServer('%s', '%s', %s')>" % \
+        return "<CrowdServer('%s', '%s', '%s')>" % \
             (self.crowd_url, self.app_name, self.app_pass)
 
     def _get(self, *args, **kwargs):
