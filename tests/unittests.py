@@ -196,11 +196,17 @@ class testCrowdAuth(unittest.TestCase):
         result = self.crowd.user_exists(USER)
         self.assertTrue(result)
 
-    def testUserAttributes(self):
+    def testUserAttributesExist(self):
         result = self.crowd.get_user(USER)
         self.assertIsNotNone(result)
         self.assertTrue('attributes' in result)
 
+    def testUserAttributesReturned(self):
+        crowdserverstub.add_user('attruser', 'mypass', {'something': True})
+        result = self.crowd.get_user('attruser')
+        self.assertIsNotNone(result)
+        self.assertTrue('attributes' in result)
+        self.assertTrue('something' in result['attributes'])
 
 if __name__ == "__main__":
     unittest.main()
