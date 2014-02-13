@@ -26,8 +26,9 @@ class CrowdUserExists(Exception):
 
 
 class CrowdError(Exception):
-    def __init__(self, message):
-        if not len(message):
+    """Generic exception when unexpected response encountered"""
+    def __init__(self, message=None):
+        if not message:
             message = "unexpected response from Crowd server"
         Exception.__init__(self, message)
 
@@ -158,11 +159,11 @@ class CrowdServer(object):
                               data=json.dumps({"value": password}),
                               params={"username": username})
 
-        if response.code == 200:
+        if response.status_code == 200:
             return response.json()
-        elif response.code == 400:
+        elif response.status_code == 400:
             j = response.json()
-            raise CrowdAuthFailure(j['reason'])
+            raise CrowdAuthFailure(j['message'])
         else:
             raise CrowdError
 
@@ -206,11 +207,12 @@ class CrowdServer(object):
                               data=json.dumps(params),
                               params={"expand": "user"})
 
-        if response.status_code == 201:
+        # TODO check correctness of status codes against live server
+        if response.status_code == 201 or response.status_code == 200:
             return response.json()
-        elif response.status_code = 400:
+        elif response.status_code == 400:
             j = response.json()
-            raise CrowdAuthFailure(j['reason'])
+            raise CrowdAuthFailure(j['message'])
 
     def validate_session(self, token, remote="127.0.0.1"):
         """Validate a session token.
@@ -268,12 +270,10 @@ class CrowdServer(object):
         url = self.rest_url + "/session/%s" % token
         response = self._delete(url)
 
-        # If token validation failed for any reason raise exception
-        if not response.ok:
+        if response.status_code == 204:
+            return True
+        else:
             raise CrowdError
-
-        # Otherwise return True
-        return True
 
     def add_user(self, username, **kwargs):
         """Add a user to the directory

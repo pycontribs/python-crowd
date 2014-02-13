@@ -298,7 +298,7 @@ class CrowdServerStub(BaseHTTPRequestHandler):
         # Either user may authenticate, used an invalid password,
         # or user does not exist.
         if user_authenticated:
-            response_code = 200
+            response_code = 201
             token = create_session(username, remote)
             response = {
                 "token": token,
