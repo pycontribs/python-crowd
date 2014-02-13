@@ -289,7 +289,7 @@ class CrowdServer(object):
         del(kwargs["password"])
 
         # Put values from kwargs into data
-        for k, v in kwargs.iteritems():
+        for k, v in kwargs.items():
             new_k = k.replace("_", "-")
             if new_k not in data:
                 raise ValueError("invalid argument %s" % k)
