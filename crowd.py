@@ -11,6 +11,27 @@ import json
 import requests
 
 
+class CrowdAuthFailure(Exception):
+    """A failure occurred while performing an authentication operation"""
+    pass
+
+
+class CrowdAuthDenied(Exception):
+    """Crowd server refused to perform the operation"""
+    pass
+
+
+class CrowdUserExists(Exception):
+    pass
+
+
+class CrowdError(Exception):
+    def __init__(self, message):
+        if not len(message):
+            message = "unexpected response from Crowd server"
+        Exception.__init__(self, message)
+
+
 class CrowdServer(object):
     """Crowd server authentication object.
 
@@ -93,6 +114,9 @@ class CrowdServer(object):
         Returns:
             bool:
                 True if the application authentication succeeded.
+
+        Raises:
+            CrowdError: If auth ping could not be completed.
         """
 
         url = self.rest_url + "/non-existent/location"
@@ -101,10 +125,11 @@ class CrowdServer(object):
         if response.status_code == 401:
             return False
         elif response.status_code == 404:
+            # A 'not found' response indicates we passed app auth
             return True
         else:
             # An error encountered - problem with the Crowd server?
-            return False
+            raise CrowdError("unidentified problem")
 
     def auth_user(self, username, password):
         """Authenticate a user account against the Crowd server.
@@ -122,19 +147,24 @@ class CrowdServer(object):
                 authentication was successful. See the Crowd documentation
                 for the authoritative list of attributes.
 
-            None: If authentication failed.
+            None: If received negative authentication response
+
+        Raises:
+            CrowdAuthFailure:
+                If authentication attempt failed (other than negative response)
         """
 
         response = self._post(self.rest_url + "/authentication",
                               data=json.dumps({"value": password}),
                               params={"username": username})
 
-        # If authentication failed for any reason return None
-        if not response.ok:
-            return None
-
-        # ...otherwise return a dictionary of user attributes
-        return response.json()
+        if response.code == 200:
+            return response.json()
+        elif response.code == 400:
+            j = response.json()
+            raise CrowdAuthFailure(j['reason'])
+        else:
+            raise CrowdError
 
     def get_session(self, username, password, remote="127.0.0.1"):
         """Create a session for a user.
@@ -158,7 +188,8 @@ class CrowdServer(object):
                 authentication was successful. See the Crowd
                 documentation for the authoritative list of attributes.
 
-            None: If authentication failed.
+        Raises:
+            CrowdAuthFailure: If authentication failed.
         """
 
         params = {
@@ -175,12 +206,11 @@ class CrowdServer(object):
                               data=json.dumps(params),
                               params={"expand": "user"})
 
-        # If authentication failed for any reason return None
-        if not response.ok:
-            return None
-
-        # Otherwise return the user object
-        return response.json()
+        if response.status_code == 201:
+            return response.json()
+        elif response.status_code = 400:
+            j = response.json()
+            raise CrowdAuthFailure(j['reason'])
 
     def validate_session(self, token, remote="127.0.0.1"):
         """Validate a session token.
@@ -200,7 +230,8 @@ class CrowdServer(object):
                 authentication was successful. See the Crowd
                 documentation for the authoritative list of attributes.
 
-            None: If authentication failed.
+        Raises:
+            CrowdAuthFailure: If authentication failed.
         """
 
         params = {
@@ -210,12 +241,12 @@ class CrowdServer(object):
         }
 
         url = self.rest_url + "/session/%s" % token
-        response = self._post(url, data=json.dumps(params), params={"expand": "user"})
+        response = self._post(url, data=json.dumps(params),
+                              params={"expand": "user"})
 
-        # For consistency between methods use None rather than False
-        # If token validation failed for any reason return None
+        # If token validation failed for any reason raise exception
         if not response.ok:
-            return None
+            raise CrowdAuthFailure
 
         # Otherwise return the user object
         return response.json()
@@ -230,16 +261,16 @@ class CrowdServer(object):
         Returns:
             True: If session terminated
 
-            None: If session termination failed
+        Raises:
+            CrowdError: If authentication failed.
         """
 
         url = self.rest_url + "/session/%s" % token
         response = self._delete(url)
 
-        # For consistency between methods use None rather than False
-        # If token validation failed for any reason return None
+        # If token validation failed for any reason raise exception
         if not response.ok:
-            return None
+            raise CrowdError
 
         # Otherwise return True
         return True
@@ -260,12 +291,10 @@ class CrowdServer(object):
         Returns:
             True: Succeeded
             False: If unsuccessful
+
+        Raises:
+            CrowdError: If authentication failed.
         """
-        # Check that mandatory elements have been provided
-        if 'password' not in kwargs:
-            raise ValueError("missing password")
-        if 'email' not in kwargs:
-            raise ValueError("missing email")
 
         components = ['username', 'password', 'first_name',
                       'last_name', 'display_name', 'active']
@@ -279,11 +308,11 @@ class CrowdServer(object):
                     "last-name": username,
                     "display-name": username,
                     "email": kwargs["email"],
-                    "password": { "value": kwargs["password"] },
+                    "password": {"value": kwargs["password"]},
                     "active": True
                    }
-        except KeyError:
-            return ValueError
+        except KeyError as e:
+            raise ValueError("missing %s" % e.message)
 
         # Remove special case 'password'
         del(kwargs["password"])
@@ -298,11 +327,20 @@ class CrowdServer(object):
         response = self._post(self.rest_url + "/user",
                               data=json.dumps(data))
 
+        # Crowd should return 201, 400 or 403
+
         if response.status_code == 201:
             return True
 
-        return False
+        if response.status_code == 400:
+            # User already exists or no password given (we checked that)
+            raise CrowdUserExists
 
+        if response.status_code == 403:
+            raise CrowdAuthDenied("application is not allowed to create "
+                                  "a new user")
+
+        raise CrowdError
 
     def get_user(self, username):
         """Retrieve information about a user
@@ -310,60 +348,83 @@ class CrowdServer(object):
         Returns:
             dict: User information
 
-            None: If no user or failure occurred
+            None: If no such user
+
+        Raises:
+            CrowdError: If unexpected response from Crowd server
         """
 
         response = self._get(self.rest_url + "/user",
                              params={"username": username,
                                      "expand": "attributes"})
 
-        if not response.ok:
+        if response.status_code == 200:
+            return response.json()
+
+        if response.status_code == 404:
             return None
 
-        return response.json()
+        raise CrowdError
 
     def get_groups(self, username):
-        """Retrieves a list of group names that have <username> as a direct member.
+        """Retrieves a list of group names that have <username> as a
+        direct member.
 
         Returns:
             list:
                 A list of strings of group names.
+
+            None: If user not found
+
+        Raises:
+            CrowdError: If unexpected response from Crowd server
         """
 
         response = self._get(self.rest_url + "/user/group/direct",
                              params={"username": username})
 
-        if not response.ok:
+        if response.status_code == 200:
+            return [g['name'] for g in response.json()['groups']]
+
+        if response.status_code == 404:
             return None
 
-        return [g['name'] for g in response.json()['groups']]
+        raise CrowdError
 
     def get_nested_groups(self, username):
-        """Retrieve a list of all group names that have <username> as a direct or indirect member.
+        """Retrieve a list of all group names that have <username> as
+        a direct or indirect member.
 
         Args:
             username: The account username.
 
-
         Returns:
             list:
                 A list of strings of group names.
+
+            None: If user not found
+
+        Raises:
+            CrowdError: If unexpected response from Crowd server
         """
 
         response = self._get(self.rest_url + "/user/group/nested",
                              params={"username": username})
 
-        if not response.ok:
+        if response.status_code == 200:
+            return [g['name'] for g in response.json()['groups']]
+
+        if response.status_code == 404:
             return None
 
-        return [g['name'] for g in response.json()['groups']]
+        raise CrowdError
 
     def get_nested_group_users(self, groupname):
-        """Retrieves a list of all users that directly or indirectly belong to the given groupname.
+        """Retrieves a list of all users that directly or indirectly
+        belong to the given groupname.
 
         Args:
             groupname: The group name.
-
 
         Returns:
             list:
