@@ -29,9 +29,10 @@ PORT = random.randint(8000, 8020)
 print("Port {0}".format(PORT))
 APP_USER = 'testapp'
 APP_PASS = 'testpass'
-USER     = 'user1'
+USER     = 'pythoncrowdtestuser'
 PASS     = 'pass1'
-GROUP    = 'group1'
+EMAIL    = 'me@test.example'
+GROUP    = 'pythoncrowdtestgroup'
 
 
 class testCrowdAuth(unittest.TestCase):
@@ -48,35 +49,63 @@ class testCrowdAuth(unittest.TestCase):
             cls.server_thread = threading.Thread(
                 target=crowdserverstub.run_server, args=(PORT,))
             cls.server_thread.start()
+            crowdserverstub.add_app(APP_USER, APP_PASS)
+            # There is a race to start the HTTP server before
+            # the unit tests begin hitting it. Sleep briefly
+            time.sleep(0.2)
 
         cls.crowd = crowd.CrowdServer(cls.base_url, APP_USER, APP_PASS)
-        crowdserverstub.add_app(APP_USER, APP_PASS)
-        crowdserverstub.add_user(USER, PASS)
 
-        # There is a race to start the HTTP server before
-        # the unit tests begin hitting it. Sleep briefly
-        time.sleep(0.2)
+        # Create user account for most tests
+        try:
+            cls.crowd.add_user(USER, password=PASS, email=EMAIL)
+        except crowd.CrowdUserExists:
+            pass
+        cls.num_users_created = 0
+        try:
+            cls.crowd.add_group(GROUP)
+        except crowd.CrowdGroupExists:
+            pass
 
     @classmethod
     def tearDownClass(cls):
-        requests.get(cls.base_url + '/terminate')
         if cls.server_thread:
+            requests.get(cls.base_url + '/terminate')
             cls.server_thread.join()
+        else:
+            # Remove users
+            try:
+                cls.crowd.remove_user(USER)
+            except:
+                pass
+            for i in xrange(0, cls.num_users_created):
+                try:
+                    cls.crowd.remove_user(USER + str(i))
+                except:
+                    pass
+            # Remove groups
+            try:
+                cls.crowd.remove_group(GROUP)
+            except:
+                pass
 
     def testStubUserExists(self):
         """Check that server stub recognises user"""
-        result = crowdserverstub.user_exists(USER)
-        self.assertTrue(result)
+        if self.server_thread:
+            result = crowdserverstub.user_exists(USER)
+            self.assertTrue(result)
 
     def testStubUserDoesNotExist(self):
         """Check that server stub does not know invalid user"""
-        result = crowdserverstub.user_exists('fakeuser')
-        self.assertFalse(result)
+        if self.server_thread:
+            result = crowdserverstub.user_exists('fakeuser')
+            self.assertFalse(result)
 
     def testStubCheckUserAuth(self):
         """Check that server stub auths our user/pass combination"""
-        result = crowdserverstub.check_user_auth(USER, PASS)
-        self.assertTrue(result)
+        if self.server_thread:
+            result = crowdserverstub.check_user_auth(USER, PASS)
+            self.assertTrue(result)
 
     def testCrowdObjectSSLVerifyTrue(self):
         """Check can create Crowd object with ssl_verify=True"""
@@ -106,15 +135,13 @@ class testCrowdAuth(unittest.TestCase):
 
     def testAuthUserInvalidUser(self):
         """User may not authenticate with invalid username"""
-        def f():
+        with self.assertRaises(crowd.CrowdAuthFailure):
             result = self.crowd.auth_user('invaliduser', 'xxxxx')
-        self.assertRaises(crowd.CrowdAuthFailure, f)
 
     def testAuthUserInvalidPass(self):
         """User may not authenticate with invalid password"""
-        def f():
+        with self.assertRaises(crowd.CrowdAuthFailure):
             result = self.crowd.auth_user(USER, 'xxxxx')
-        self.assertRaises(crowd.CrowdAuthFailure, f)
 
     def testCreateSessionValidUser(self):
         """User may create a session with valid credentials"""
@@ -142,17 +169,20 @@ class testCrowdAuth(unittest.TestCase):
 
     def testValidateSessionInvalidToken(self):
         """Detect invalid session token"""
-        def f():
+        with self.assertRaises(crowd.CrowdAuthFailure):
             token = '0' * 24
             result = self.crowd.validate_session(token)
-        self.assertRaises(crowd.CrowdAuthFailure, f)
 
     def testValidateSessionValidUserUTF8(self):
         """Validate that the library handles UTF-8 in fields properly"""
+        username = USER + 'utf8'
+        email = u'me@test.ëxample'
+        self.crowd.add_user(username, password=PASS, email=email)
         session = self.crowd.get_session(USER, PASS)
+        print session
         token = session['token']
         result = self.crowd.validate_session(token)
-        self.assertEquals(result['user']['email'], u'%s@does.not.ëxist' % USER)
+        self.assertEquals(result['user']['email'], email)
 
     def testCreateSessionIdentical(self):
         """Sessions from same remote are identical"""
@@ -176,33 +206,29 @@ class testCrowdAuth(unittest.TestCase):
     def testTerminateSessionInvalidToken(self):
         token = '0' * 24
         result = self.crowd.terminate_session(token)
-        self.assertIsTrue(result)
+        self.assertTrue(result)
 
     def testGetGroupsNotEmpty(self):
-        crowdserverstub.add_user_to_group(USER, GROUP)
+        self.crowd.add_user_to_group(USER, GROUP)
         result = self.crowd.get_groups(USER)
         self.assertEqual(set(result), set([GROUP]))
-        crowdserverstub.remove_user_from_group(USER, GROUP)
+        self.crowd.remove_user_from_group(USER, GROUP)
 
     def testGetNestedGroupsNotEmpty(self):
-        crowdserverstub.add_user_to_group(USER, GROUP)
+        self.crowd.add_user_to_group(USER, GROUP)
         result = self.crowd.get_nested_groups(USER)
+        self.crowd.remove_user_from_group(USER, GROUP)
         self.assertEqual(set(result), set([GROUP]))
-        crowdserverstub.remove_user_from_group(USER, GROUP)
 
     def testRemoveUserFromGroup(self):
-        #crowdserverstub.add_user_to_group(USER, GROUP)
-        #crowdserverstub.remove_user_from_group(USER, GROUP)
         self.crowd.add_user_to_group(USER, GROUP)
         self.crowd.remove_user_from_group(USER, GROUP)
         result = self.crowd.get_groups(USER)
         self.assertEqual(set(result), set([]))
 
     def testGetNestedGroupUsersNotEmpty(self):
-        #crowdserverstub.add_user_to_group(USER, GROUP)
         self.crowd.add_user_to_group(USER, GROUP)
         result = self.crowd.get_nested_group_users(GROUP)
-        #crowdserverstub.remove_user_from_group(USER, GROUP)
         self.crowd.remove_user_from_group(USER, GROUP)
         self.assertEqual(set(result), set([USER]))
 
@@ -216,26 +242,24 @@ class testCrowdAuth(unittest.TestCase):
         self.assertTrue('attributes' in result)
 
     def testUserAttributesReturned(self):
-        crowdserverstub.add_user('attruser', 'mypass', {'something': True})
-        result = self.crowd.get_user('attruser')
+        result = self.crowd.get_user(USER)
         self.assertIsNotNone(result)
         self.assertTrue('attributes' in result)
-        self.assertTrue('something' in result['attributes'])
+        self.assertTrue('attributes' in result['attributes'])  # Yo dawg
 
     def testUserCreationSuccess(self):
-        result = self.crowd.add_user('newuser',
-                                     email='me@test.example',
-                                     password='hello')
+        username = USER + str(self.num_users_created)
+        self.num_users_created += 1
+        print "testUserCreationSuccess"
+        print "Adding user %s" % username
+        result = self.crowd.add_user(username, password=PASS, email=EMAIL)
         self.assertTrue(result)
 
     def testUserCreationDuplicate(self):
         def add_user():
-            result = self.crowd.add_user('newuser1',
-                                         email='me@test.example',
-                                         password='hello')
+            result = self.crowd.add_user(USER, password=PASS, email=EMAIL)
             return result
-        result = add_user()
-        self.assertTrue(result)
+        # USER already created during test setup
         self.assertRaises(crowd.CrowdUserExists, add_user)
 
     def testUserCreationMissingPassword(self):
