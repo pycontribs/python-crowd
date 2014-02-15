@@ -10,7 +10,7 @@
     
     <title>Welcome to python-crowd’s documentation! &mdash; python-crowd 0.9.0 documentation</title>
     
-    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/rtd.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
@@ -122,7 +122,7 @@ to the end of this list and include the change in your pull request.</p>
 </ul>
 <span class="target" id="module-crowd"></span><dl class="class">
 <dt id="crowd.CrowdServer">
-<em class="property">class </em><tt class="descclassname">crowd.</tt><tt class="descname">CrowdServer</tt><big>(</big><em>crowd_url</em>, <em>app_name</em>, <em>app_pass</em><big>)</big><a class="headerlink" href="#crowd.CrowdServer" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><tt class="descclassname">crowd.</tt><tt class="descname">CrowdServer</tt><big>(</big><em>crowd_url</em>, <em>app_name</em>, <em>app_pass</em>, <em>ssl_verify=True</em><big>)</big><a class="headerlink" href="#crowd.CrowdServer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Crowd server authentication object.</p>
 <p>This is a Crowd authentication class to be configured for a
 particular application (app_name) to authenticate users
@@ -133,11 +133,36 @@ and permitted to authenticate users against one or more user
 directories prior to using this module.</p>
 <p>Please see the Crowd documentation for information about
 configuring additional applications to talk to Crowd.</p>
+<p>The <tt class="docutils literal"><span class="pre">ssl_verify</span></tt> parameter controls how and if certificates are verified.
+If <tt class="docutils literal"><span class="pre">True</span></tt>, the SSL certificate will be verified.
+A CA_BUNDLE path can also be provided.</p>
+<dl class="method">
+<dt id="crowd.CrowdServer.add_user">
+<tt class="descname">add_user</tt><big>(</big><em>username</em>, <em>**kwargs</em><big>)</big><a class="headerlink" href="#crowd.CrowdServer.add_user" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a user to the directory</p>
+<dl class="docutils">
+<dt>Args:</dt>
+<dd><p class="first">username: The account username
+<a href="#id1"><span class="problematic" id="id2">**</span></a>kwargs: key-value pairs:</p>
+<blockquote class="last">
+<div>password: mandatory
+email: mandatory
+first_name: optional
+last_name: optional
+display_name: optional
+active: optional (default True)</div></blockquote>
+</dd>
+<dt>Returns:</dt>
+<dd>True: Succeeded
+False: If unsuccessful</dd>
+</dl>
+</dd></dl>
+
 <dl class="method">
 <dt id="crowd.CrowdServer.auth_ping">
 <tt class="descname">auth_ping</tt><big>(</big><big>)</big><a class="headerlink" href="#crowd.CrowdServer.auth_ping" title="Permalink to this definition">¶</a></dt>
 <dd><p>Test that application can authenticate to Crowd.</p>
-<p>Attempts to authentication the application user against
+<p>Attempts to authenticate the application user against
 the Crowd server. In order for user authentication to
 work, an application must be able to authenticate.</p>
 <dl class="docutils">
@@ -231,7 +256,7 @@ for the authoritative list of attributes.</dd>
 <dt>remote:</dt>
 <dd>The remote address of the user. This can be used
 to create multiple concurrent sessions for a user.
-The host you run this program may need to be configured
+The host you run this program on may need to be configured
 in Crowd as a trusted proxy for this to work.</dd>
 </dl>
 </dd>
@@ -243,6 +268,18 @@ authentication was successful. See the Crowd
 documentation for the authoritative list of attributes.</dd>
 </dl>
 <p class="last">None: If authentication failed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="crowd.CrowdServer.get_user">
+<tt class="descname">get_user</tt><big>(</big><em>username</em><big>)</big><a class="headerlink" href="#crowd.CrowdServer.get_user" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve information about a user</p>
+<dl class="docutils">
+<dt>Returns:</dt>
+<dd><p class="first">dict: User information</p>
+<p class="last">None: If no user or failure occurred</p>
 </dd>
 </dl>
 </dd></dl>
