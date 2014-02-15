@@ -248,11 +248,9 @@ class testCrowdAuth(unittest.TestCase):
         self.assertTrue('attributes' in result['attributes'])  # Yo dawg
 
     def testUserCreationSuccess(self):
-        username = USER + str(self.num_users_created)
-        self.num_users_created += 1
-        print "testUserCreationSuccess"
-        print "Adding user %s" % username
+        username = USER + "tmp"
         result = self.crowd.add_user(username, password=PASS, email=EMAIL)
+        self.crowd.remove_user(username)
         self.assertTrue(result)
 
     def testUserCreationDuplicate(self):
