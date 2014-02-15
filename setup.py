@@ -6,7 +6,7 @@ setup(
     name='Crowd',
     license='BSD',
     py_modules=['crowd'],
-    version='0.8',
+    version='0.9.0',
     install_requires=['requests'],
 
     description='A python client to the Atlassian Crowd REST API',
