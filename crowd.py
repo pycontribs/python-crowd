@@ -221,8 +221,7 @@ class CrowdServer(object):
                               data=json.dumps(params),
                               params={"expand": "user"})
 
-        # TODO check correctness of status codes against live server
-        if response.status_code == 201 or response.status_code == 200:
+        if response.status_code == 201:
             return response.json()
 
         if response.status_code == 400:
@@ -521,13 +520,13 @@ class CrowdServer(object):
         if response.status_code == 400:
             raise CrowdNoSuchUser
 
-        if response.status_code == 400:
+        if response.status_code == 404:
             raise CrowdNoSuchGroup
 
         if response.status_code == 409:
             raise CrowdUserExists
 
-        raise CrowdError
+        raise CrowdError("received server response %d" % response.status_code)
 
     def remove_user_from_group(self, username, groupname):
         """Remove user as a direct member of a group
