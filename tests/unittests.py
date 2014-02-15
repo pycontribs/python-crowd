@@ -150,15 +150,13 @@ class testCrowdAuth(unittest.TestCase):
 
     def testCreateSessionInvalidUser(self):
         """User may not create a session with invalid username"""
-        def f():
+        with self.assertRaises(crowd.CrowdAuthFailure):
             result = self.crowd.get_session('invaliduser', 'xxxxx')
-        self.assertRaises(crowd.CrowdAuthFailure, f)
 
     def testCreateSessionInvalidPass(self):
         """User may not create a session with invalid password"""
-        def f():
+        with self.assertRaises(crowd.CrowdAuthFailure):
             result = self.crowd.get_session(USER, 'xxxxx')
-        self.assertRaises(crowd.CrowdAuthFailure, f)
 
     def testValidateSessionValidUser(self):
         """Validate a valid session token"""
@@ -257,31 +255,25 @@ class testCrowdAuth(unittest.TestCase):
         self.assertTrue(result)
 
     def testUserCreationDuplicate(self):
-        def add_user():
+        with self.assertRaises(crowd.CrowdUserExists):
+            # USER already created during test setup.
+            # This is attempting to add the account again.
             result = self.crowd.add_user(USER, password=PASS, email=EMAIL)
-            return result
-        # USER already created during test setup
-        self.assertRaises(crowd.CrowdUserExists, add_user)
 
     def testUserCreationMissingPassword(self):
-        def f():
-            result = self.crowd.add_user('newuser2',
-                                         email='me@test.example')
-        self.assertRaisesRegexp(ValueError, "missing password", f)
+        with self.assertRaisesRegexp(ValueError, "missing password"):
+            result = self.crowd.add_user(USER, email=EMAIL)
 
     def testUserCreationMissingEmail(self):
-        def f():
-            result = self.crowd.add_user('newuser',
-                                         password='something')
-        self.assertRaisesRegexp(ValueError, "missing email", f)
+        with self.assertRaisesRegexp(ValueError, "missing email"):
+            result = self.crowd.add_user(USER, password=PASS)
 
     def testUserCreationInvalidParam(self):
-        def f():
+        with self.assertRaisesRegexp(ValueError, "invalid argument .*"):
             result = self.crowd.add_user('newuser',
-                                         email='me@test.example',
-                                         password='hello',
+                                         email=EMAIL,
+                                         password=PASS,
                                          invalid_param='bad argument')
-        self.assertRaisesRegexp(ValueError, "invalid argument .*", f)
 
 if __name__ == "__main__":
     unittest.main()
