@@ -356,6 +356,37 @@ class CrowdServer(object):
 
         raise CrowdError
 
+    def remove_user(self, username):
+        """Remove a user from the directory
+
+        Args:
+            username: The account username
+
+        Returns:
+            True: Succeeded
+
+        Raises:
+            CrowdNoSuchUser: If user did not exist
+            CrowdAuthDenied: If application not allowed to delete the user
+        """
+
+        response = self._delete(self.rest_url + "/user",
+                             params={"username": username})
+
+        # Crowd should return 204, 403 or 404
+
+        if response.status_code == 204:
+            return True
+
+        if response.status_code == 403:
+            raise CrowdAuthDenied("application is not allowed to delete user")
+
+        if response.status_code == 404:
+            # User did not exist
+            raise CrowdNoSuchUser
+
+        raise CrowdError
+
     def get_user(self, username):
         """Retrieve information about a user
 
