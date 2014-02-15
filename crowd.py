@@ -29,6 +29,10 @@ class CrowdNoSuchUser(Exception):
     pass
 
 
+class CrowdGroupExists(Exception):
+    pass
+
+
 class CrowdNoSuchGroup(Exception):
     pass
 
@@ -376,6 +380,45 @@ class CrowdServer(object):
             return None
 
         raise CrowdError
+
+    def add_group(self, groupname, **kwargs):
+        """Creates a group
+
+        Returns:
+            True: The group was created
+
+        Raises:
+            CrowdGroupExists: The group already exists
+            CrowdAuthFail
+            CrowdError: If unexpected response from Crowd server
+        """
+
+        data = {
+                "name": groupname,
+                "description": groupname,
+                "active": True,
+                "type": "GROUP"
+               }
+        # Put values from kwargs into data
+        for k, v in kwargs.items():
+            if k not in data:
+                raise ValueError("invalid argument %s" % k)
+            data[k] = v
+
+        response = self._post(self.rest_url + "/group",
+                              data=json.dumps(data))
+
+        if response.status_code == 201:
+            return True
+
+        if response.status_code == 400:
+            raise CrowdGroupExists
+
+        if response.status_code == 403:
+            raise CrowdAuthFailure
+
+        raise CrowdError("status code %d" % response.status_code)
+
 
     def get_groups(self, username):
         """Retrieves a list of group names that have <username> as a
