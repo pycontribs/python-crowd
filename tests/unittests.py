@@ -175,13 +175,16 @@ class testCrowdAuth(unittest.TestCase):
 
     def testValidateSessionValidUserUTF8(self):
         """Validate that the library handles UTF-8 in fields properly"""
-        username = USER + 'utf8'
-        email = u'me@test.ëxample'
-        self.crowd.add_user(username, password=PASS, email=email)
-        session = self.crowd.get_session(USER, PASS)
-        print session
+        username = USER + "unicode"
+        email = u'ÜñÍçÔÐê'
+        try:
+            self.crowd.add_user(username, password=PASS, email=email)
+        except crowd.CrowdUserExists:
+            pass
+        session = self.crowd.get_session(username, PASS)
         token = session['token']
         result = self.crowd.validate_session(token)
+        self.crowd.remove_user(username)
         self.assertEquals(result['user']['email'], email)
 
     def testCreateSessionIdentical(self):
