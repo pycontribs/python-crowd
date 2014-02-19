@@ -37,7 +37,6 @@ class CrowdServer(object):
         self.app_name = app_name
         self.app_pass = app_pass
         self.rest_url = crowd_url.rstrip("/") + "/rest/usermanagement/1"
-
         self.session = requests.Session()
         self.session.verify = ssl_verify
         self.session.auth = requests.auth.HTTPBasicAuth(app_name, app_pass)
@@ -399,3 +398,28 @@ class CrowdServer(object):
             return None
 
         return True
+
+    def search(self, search_string):
+        """Does a search.
+
+        Args:
+            ??
+            username: The user name.
+
+
+        Returns:
+            bool:
+                True if the user exists in the Crowd application.
+        """
+
+        response = self._get(self.rest_url + "/search",
+                             params={"entity-type": "user",
+                                     "expand":"user", 
+                                      "property-search-restriction":{ "property":{ "name":"email","type":"string" },
+                                                                      "match-mode":"CONTAINS",
+                                                                      "value":search_string } } )
+
+        if not response.ok:
+            return None
+
+        return response.json()
