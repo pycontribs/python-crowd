@@ -404,12 +404,12 @@ class CrowdServer(object):
 
         Args:
             ??
-            username: The user name.
+            search_string: the string to search for.
 
 
         Returns:
-            bool:
-                True if the user exists in the Crowd application.
+            json results:
+                Returns search results.
         """
 
         response = self._get(self.rest_url + "/search",
