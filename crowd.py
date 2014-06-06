@@ -308,6 +308,26 @@ class CrowdServer(object):
 
         return True
 
+    def delete_user(self, username):
+        """Delete a username.
+
+        Args:
+            username: The user name.
+
+
+        Returns:
+            bool:
+                True if successfull
+        """
+
+        response = self._delete(self.rest_url + "/user",
+                             params={"username": username})
+
+        if not response.ok:
+            return None
+
+        return True
+
     def add_group(self, group):
         """Add a new group
 
@@ -366,6 +386,23 @@ class CrowdServer(object):
 
         if not response.ok:
             return False
+
+        return(response)
+
+    def remove_user_from_group(self, username, group):
+        """Removes a user from a group.
+
+        Returns:
+            None: If failed.
+        """
+        usr_dict = {
+            "groupname" : group,
+            "username" : username
+        }
+        
+        #DELETE /group/user/direct?groupname=GROUPNAME&username=USERNAME
+        response = self._delete(self.rest_url + "/user/group/direct",
+                              params={"groupname": group, "username": username})
 
         return(response)
 
