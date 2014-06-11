@@ -328,6 +328,26 @@ class CrowdServer(object):
 
         return True
 
+    def delete_group(self, groupname):
+        """Delete a group.
+
+        Args:
+            groupname: The group name.
+
+
+        Returns:
+            bool:
+                True if successfull
+        """
+
+        response = self._delete(self.rest_url + "/group",
+                             params={"groupname": groupname})
+
+        if not response.ok:
+            return None
+
+        return True
+
     def add_group(self, group):
         """Add a new group
 
