@@ -11,6 +11,40 @@ import json
 import requests
 
 
+class CrowdAuthFailure(Exception):
+    """A failure occurred while performing an authentication operation"""
+    pass
+
+
+class CrowdAuthDenied(Exception):
+    """Crowd server refused to perform the operation"""
+    pass
+
+
+class CrowdUserExists(Exception):
+    pass
+
+
+class CrowdNoSuchUser(Exception):
+    pass
+
+
+class CrowdGroupExists(Exception):
+    pass
+
+
+class CrowdNoSuchGroup(Exception):
+    pass
+
+
+class CrowdError(Exception):
+    """Generic exception when unexpected response encountered"""
+    def __init__(self, message=None):
+        if not message:
+            message = "unexpected response from Crowd server"
+        Exception.__init__(self, message)
+
+
 class CrowdServer(object):
     """Crowd server authentication object.
 
@@ -93,6 +127,9 @@ class CrowdServer(object):
         Returns:
             bool:
                 True if the application authentication succeeded.
+
+        Raises:
+            CrowdError: If auth ping could not be completed.
         """
 
         url = self.rest_url + "/non-existent/location"
@@ -100,11 +137,13 @@ class CrowdServer(object):
 
         if response.status_code == 401:
             return False
-        elif response.status_code == 404:
+
+        if response.status_code == 404:
+            # A 'not found' response indicates we passed app auth
             return True
-        else:
-            # An error encountered - problem with the Crowd server?
-            return False
+
+        # An error encountered - problem with the Crowd server?
+        raise CrowdError("unidentified problem")
 
     def auth_user(self, username, password):
         """Authenticate a user account against the Crowd server.
@@ -122,19 +161,25 @@ class CrowdServer(object):
                 authentication was successful. See the Crowd documentation
                 for the authoritative list of attributes.
 
-            None: If authentication failed.
+            None: If received negative authentication response
+
+        Raises:
+            CrowdAuthFailure:
+                If authentication attempt failed (other than negative response)
         """
 
         response = self._post(self.rest_url + "/authentication",
                               data=json.dumps({"value": password}),
                               params={"username": username})
 
-        # If authentication failed for any reason return None
-        if not response.ok:
-            return None
+        if response.status_code == 200:
+            return response.json()
 
-        # ...otherwise return a dictionary of user attributes
-        return response.json()
+        if response.status_code == 400:
+            j = response.json()
+            raise CrowdAuthFailure(j['message'])
+
+        raise CrowdError
 
     def get_session(self, username, password, remote="127.0.0.1"):
         """Create a session for a user.
@@ -158,7 +203,8 @@ class CrowdServer(object):
                 authentication was successful. See the Crowd
                 documentation for the authoritative list of attributes.
 
-            None: If authentication failed.
+        Raises:
+            CrowdAuthFailure: If authentication failed.
         """
 
         params = {
@@ -175,12 +221,14 @@ class CrowdServer(object):
                               data=json.dumps(params),
                               params={"expand": "user"})
 
-        # If authentication failed for any reason return None
-        if not response.ok:
-            return None
+        if response.status_code == 201:
+            return response.json()
 
-        # Otherwise return the user object
-        return response.json()
+        if response.status_code == 400:
+            j = response.json()
+            raise CrowdAuthFailure(j['message'])
+
+        raise CrowdError
 
     def validate_session(self, token, remote="127.0.0.1"):
         """Validate a session token.
@@ -200,7 +248,8 @@ class CrowdServer(object):
                 authentication was successful. See the Crowd
                 documentation for the authoritative list of attributes.
 
-            None: If authentication failed.
+        Raises:
+            CrowdAuthFailure: If authentication failed.
         """
 
         params = {
@@ -210,12 +259,12 @@ class CrowdServer(object):
         }
 
         url = self.rest_url + "/session/%s" % token
-        response = self._post(url, data=json.dumps(params), params={"expand": "user"})
+        response = self._post(url, data=json.dumps(params),
+                              params={"expand": "user"})
 
-        # For consistency between methods use None rather than False
-        # If token validation failed for any reason return None
+        # If token validation failed for any reason raise exception
         if not response.ok:
-            return None
+            raise CrowdAuthFailure
 
         # Otherwise return the user object
         return response.json()
@@ -230,19 +279,17 @@ class CrowdServer(object):
         Returns:
             True: If session terminated
 
-            None: If session termination failed
+        Raises:
+            CrowdError: If authentication failed.
         """
 
         url = self.rest_url + "/session/%s" % token
         response = self._delete(url)
 
-        # For consistency between methods use None rather than False
-        # If token validation failed for any reason return None
-        if not response.ok:
-            return None
+        if response.status_code == 204:
+            return True
 
-        # Otherwise return True
-        return True
+        raise CrowdError
 
     def add_user(self, username, **kwargs):
         """Add a user to the directory
@@ -260,15 +307,11 @@ class CrowdServer(object):
         Returns:
             True: Succeeded
             False: If unsuccessful
-        """
-        # Check that mandatory elements have been provided
-        if 'password' not in kwargs:
-            raise ValueError("missing password")
-        if 'email' not in kwargs:
-            raise ValueError("missing email")
 
-        components = ['username', 'password', 'first_name',
-                      'last_name', 'display_name', 'active']
+        Raises:
+            CrowdError: If authentication failed.
+        """
+
         # Populate data with default and mandatory values.
         # A KeyError means a mandatory value was not provided,
         # so raise a ValueError indicating bad args.
@@ -279,11 +322,11 @@ class CrowdServer(object):
                     "last-name": username,
                     "display-name": username,
                     "email": kwargs["email"],
-                    "password": { "value": kwargs["password"] },
+                    "password": {"value": kwargs["password"]},
                     "active": True
                    }
-        except KeyError:
-            return ValueError
+        except KeyError as e:
+            raise ValueError("missing %s" % e.message)
 
         # Remove special case 'password'
         del(kwargs["password"])
@@ -298,11 +341,51 @@ class CrowdServer(object):
         response = self._post(self.rest_url + "/user",
                               data=json.dumps(data))
 
+        # Crowd should return 201, 400 or 403
+
         if response.status_code == 201:
             return True
 
-        return False
+        if response.status_code == 400:
+            # User already exists / no password given (but we checked that)
+            raise CrowdUserExists
 
+        if response.status_code == 403:
+            raise CrowdAuthDenied("application is not allowed to create "
+                                  "a new user")
+
+        raise CrowdError
+
+    def remove_user(self, username):
+        """Remove a user from the directory
+
+        Args:
+            username: The account username
+
+        Returns:
+            True: Succeeded
+
+        Raises:
+            CrowdNoSuchUser: If user did not exist
+            CrowdAuthDenied: If application not allowed to delete the user
+        """
+
+        response = self._delete(self.rest_url + "/user",
+                             params={"username": username})
+
+        # Crowd should return 204, 403 or 404
+
+        if response.status_code == 204:
+            return True
+
+        if response.status_code == 403:
+            raise CrowdAuthDenied("application is not allowed to delete user")
+
+        if response.status_code == 404:
+            # User did not exist
+            raise CrowdNoSuchUser
+
+        raise CrowdError
 
     def get_user(self, username):
         """Retrieve information about a user
@@ -310,60 +393,214 @@ class CrowdServer(object):
         Returns:
             dict: User information
 
-            None: If no user or failure occurred
+            None: If no such user
+
+        Raises:
+            CrowdError: If unexpected response from Crowd server
         """
 
         response = self._get(self.rest_url + "/user",
                              params={"username": username,
                                      "expand": "attributes"})
 
-        if not response.ok:
+        if response.status_code == 200:
+            return response.json()
+
+        if response.status_code == 404:
             return None
 
-        return response.json()
+        raise CrowdError
+
+    def get_user_direct_group(self, username, groupname):
+        """Retrieves the user that is a direct member of the specified group
+
+        Returns:
+            dict: User information
+
+            None: If no such user in the group
+
+        Raises:
+            CrowdError: If unexpected response from Crowd server
+        """
+
+        response = self._get(self.rest_url + "/group/user/direct",
+                             params={"groupname": groupname,
+                                     "username": username})
+
+        if response.status_code == 200:
+            return response.json()
+
+        if response.status_code == 404:
+            return None
+
+        raise CrowdError
+
+    def get_child_group_direct(self, groupname):
+        """Retrieves the groups that are direct children of the specified group
+
+        Returns:
+            List: Group names
+
+            None: If no such group is found
+
+        Raises:
+            CrowdError: If unexpected response from Crowd server
+        """
+
+        response = self._get(self.rest_url + "/group/child-group/direct",
+                             params={"groupname": groupname})
+
+        if response.status_code == 200:
+            return response.json()
+
+        if response.status_code == 404:
+            return None
+
+        raise CrowdError
+
+    def get_group_membership(self):
+        """Retrieves full details of all group memberships, with users and nested groups.
+
+        Returns:
+            List: All group memberships
+
+            None: If no such group is found
+
+        Raises:
+            CrowdError: If unexpected response from Crowd server
+        """
+
+        response = self._get(self.rest_url + "/group/membership")
+
+        if response.status_code == 200:
+            return response.json()
+
+        if response.status_code == 404:
+            return None
+
+        raise CrowdError
+
+    def get_group_users_direct(self, groupname):
+        """Retrieves the users that are direct members of the specified group
+
+        Returns:
+            List: Users
+
+            None: If no such group is found
+
+        Raises:
+            CrowdError: If unexpected response from Crowd server
+        """
+
+        response = self._get(self.rest_url + "/group/user/direct",
+                             params={"groupname": groupname})
+
+        if response.status_code == 200:
+            return response.json()
+
+        if response.status_code == 404:
+            return None
+
+        raise CrowdError
+
+    def add_group(self, groupname, **kwargs):
+        """Creates a group
+
+        Returns:
+            True: The group was created
+
+        Raises:
+            CrowdGroupExists: The group already exists
+            CrowdAuthFail
+            CrowdError: If unexpected response from Crowd server
+        """
+
+        data = {
+                "name": groupname,
+                "description": groupname,
+                "active": True,
+                "type": "GROUP"
+               }
+        # Put values from kwargs into data
+        for k, v in kwargs.items():
+            if k not in data:
+                raise ValueError("invalid argument %s" % k)
+            data[k] = v
+
+        response = self._post(self.rest_url + "/group",
+                              data=json.dumps(data))
+
+        if response.status_code == 201:
+            return True
+
+        if response.status_code == 400:
+            raise CrowdGroupExists
+
+        if response.status_code == 403:
+            raise CrowdAuthFailure
+
+        raise CrowdError("status code %d" % response.status_code)
+
 
     def get_groups(self, username):
-        """Retrieves a list of group names that have <username> as a direct member.
+        """Retrieves a list of group names that have <username> as a
+        direct member.
 
         Returns:
             list:
                 A list of strings of group names.
+
+            None: If user not found
+
+        Raises:
+            CrowdError: If unexpected response from Crowd server
         """
 
         response = self._get(self.rest_url + "/user/group/direct",
                              params={"username": username})
 
-        if not response.ok:
+        if response.status_code == 200:
+            return [g['name'] for g in response.json()['groups']]
+
+        if response.status_code == 404:
             return None
 
-        return [g['name'] for g in response.json()['groups']]
+        raise CrowdError
 
     def get_nested_groups(self, username):
-        """Retrieve a list of all group names that have <username> as a direct or indirect member.
+        """Retrieve a list of all group names that have <username> as
+        a direct or indirect member.
 
         Args:
             username: The account username.
 
-
         Returns:
             list:
                 A list of strings of group names.
+
+            None: If user not found
+
+        Raises:
+            CrowdError: If unexpected response from Crowd server
         """
 
         response = self._get(self.rest_url + "/user/group/nested",
                              params={"username": username})
 
-        if not response.ok:
+        if response.status_code == 200:
+            return [g['name'] for g in response.json()['groups']]
+
+        if response.status_code == 404:
             return None
 
-        return [g['name'] for g in response.json()['groups']]
+        raise CrowdError
 
     def get_nested_group_users(self, groupname):
-        """Retrieves a list of all users that directly or indirectly belong to the given groupname.
+        """Retrieves a list of all users that directly or indirectly
+        belong to the given groupname.
 
         Args:
             groupname: The group name.
-
 
         Returns:
             list:
@@ -380,6 +617,105 @@ class CrowdServer(object):
 
         return [u['name'] for u in response.json()['users']]
 
+    def add_user_to_group(self, username, groupname):
+        """Make user a direct member of a group
+
+        Args:
+            username: The user name.
+            groupname: The group name.
+
+        Returns:
+            True: If successful
+
+        Raises:
+            CrowdNoSuchUser: The user does not exist
+            CrowdNoSuchGroup: The group does not exist
+            CrowdUserExists: The user is already a member
+            CrowdError: Unexpected response
+        """
+        response = self._post(self.rest_url + "/group/user/direct",
+                              data=json.dumps({"name": username}),
+                              params={"groupname": groupname})
+
+        if response.status_code == 201:
+            return True
+
+        if response.status_code == 400:
+            raise CrowdNoSuchUser
+
+        if response.status_code == 404:
+            raise CrowdNoSuchGroup
+
+        if response.status_code == 409:
+            raise CrowdUserExists
+
+        raise CrowdError("received server response %d" % response.status_code)
+
+    def add_child_group_to_group(self, parentgroupname, childgroupname):
+        """Make user a direct member of a group
+
+        Args:
+            username: The user name.
+            groupname: The group name.
+
+        Returns:
+            True: If successful
+
+        Raises:
+            CrowdNoSuchUser: The user does not exist
+            CrowdNoSuchGroup: The group does not exist
+            CrowdUserExists: The user is already a member
+            CrowdError: Unexpected response
+        """
+        response = self._post(self.rest_url + "/group/child-group/direct",
+                              data=json.dumps({"name": childgroupname}),
+                              params={"groupname": parentgroupname})
+
+        if response.status_code == 201:
+            return True
+
+        if response.status_code == 400:
+            raise CrowdNoSuchUser
+
+        if response.status_code == 404:
+            raise CrowdNoSuchGroup
+
+        raise CrowdError("received server response %d" % response.status_code)
+
+    def remove_user_from_group(self, username, groupname):
+        """Remove user as a direct member of a group
+
+        Args:
+            username: The user name.
+            groupname: The group name.
+
+        Returns:
+            True: If successful
+
+        Raises:
+            CrowdNotFound: The user or group does not exist
+            CrowdUserExists: The user is already a member
+            CrowdError: Unexpected response
+        """
+        response = self._delete(self.rest_url + "/group/user/direct",
+                              params={"groupname": groupname,
+                                      "username": username})
+
+        if response.status_code == 204:
+            return True
+
+        if response.status_code == 404:
+            # user or group does not exist
+            j = response.json()
+            if j['message'].lower().startswith('group'):
+                raise CrowdNoSuchGroup
+            elif j['message'].lower().startswith('user'):
+                raise CrowdNoSuchUser
+            else:
+                raise CrowdError("unknown server response")
+
+        raise CrowdError
+
     def user_exists(self, username):
         """Determines if the user exists.
 
@@ -394,6 +730,26 @@ class CrowdServer(object):
 
         response = self._get(self.rest_url + "/user",
                              params={"username": username})
+
+        if not response.ok:
+            return None
+
+        return True
+
+    def group_exists(self, group):
+        """Determines if the group exists.
+
+        Args:
+            group: The group name.
+
+
+        Returns:
+            bool:
+                True if the group exists in the Crowd application.
+        """
+
+        response = self._get(self.rest_url + "/group",
+                             params={"groupname": group})
 
         if not response.ok:
             return None
