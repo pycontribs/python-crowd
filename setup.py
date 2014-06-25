@@ -3,10 +3,10 @@ import os.path
 __dir__ = os.path.dirname(os.path.abspath(__file__))
 
 setup(
-    name='Crowd',
+    name='CrowdEvry',
     license='BSD',
     py_modules=['crowd'],
-    version='0.7evry',
+    version='0.7a1dev0',
     install_requires=['requests'],
 
     description='A python client to the Atlassian Crowd REST API',
