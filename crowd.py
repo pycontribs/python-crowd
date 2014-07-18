@@ -32,11 +32,12 @@ class CrowdServer(object):
     A CA_BUNDLE path can also be provided.
     """
 
-    def __init__(self, crowd_url, app_name, app_pass, ssl_verify=True):
+    def __init__(self, crowd_url, app_name, app_pass, ssl_verify=True, timeout=None):
         self.crowd_url = crowd_url
         self.app_name = app_name
         self.app_pass = app_pass
         self.rest_url = crowd_url.rstrip("/") + "/rest/usermanagement/1"
+        self.timeout = timeout
 
         self.session = requests.Session()
         self.session.verify = ssl_verify
@@ -60,6 +61,10 @@ class CrowdServer(object):
             Response:
                 A Requests Response object
         """
+
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = self.timeout
+
         req = self.session.get(*args, **kwargs)
         return req
 
@@ -70,6 +75,10 @@ class CrowdServer(object):
             Response:
                 A Requests Response object
         """
+
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = self.timeout
+
         req = self.session.post(*args, **kwargs)
         return req
 
@@ -80,6 +89,10 @@ class CrowdServer(object):
             Response:
                 A Requests Response object
         """
+
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = self.timeout
+
         req = self.session.delete(*args, **kwargs)
         return req
 
