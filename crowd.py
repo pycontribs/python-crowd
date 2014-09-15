@@ -484,6 +484,26 @@ class CrowdServer(object):
 
         return [u['name'] for u in response.json()['users']]
 
+    def get_all_groups_users(self):
+        """Return all groups + user membership.
+
+        Args:
+            None
+
+
+        Returns:
+            dict:
+                [<group>][<users>]
+        """
+
+        response = self._get(self.rest_url + "/group/membership")
+
+        if not response.ok:
+            return None
+#        print response
+        
+        return response
+
     def user_exists(self, username):
         """Determines if the user exists.
 
