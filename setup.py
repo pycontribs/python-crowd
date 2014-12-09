@@ -6,8 +6,8 @@ setup(
     name='Crowd',
     license='BSD',
     py_modules=['crowd'],
-    version='0.10.1',
-    install_requires=['requests'],
+    version='0.10.2',
+    install_requires=['requests','xmltodict'],
 
     description='A python client to the Atlassian Crowd REST API',
     long_description=open(os.path.join(__dir__, 'README.rst')).read(),

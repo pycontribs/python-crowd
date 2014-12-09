@@ -9,7 +9,7 @@
 
 import json
 import requests
-
+import xmltodict
 
 class CrowdAuthFailure(Exception):
     """A failure occurred while performing an authentication operation"""
@@ -462,18 +462,22 @@ class CrowdServer(object):
         """Retrieves full details of all group memberships, with users and nested groups.
 
         Returns:
-            List: All group memberships
+            Dict: All group memberships
 
             None: If no such group is found
 
         Raises:
             CrowdError: If unexpected response from Crowd server
         """
+        self.session.headers.update({
+            "Content-type": "application/xml",
+            "Accept": "application/xml"
+        })
 
         response = self._get(self.rest_url + "/group/membership")
 
         if response.status_code == 200:
-            return response.json()
+            return xmltodict.parse(response.content)
 
         if response.status_code == 404:
             return None
