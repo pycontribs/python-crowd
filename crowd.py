@@ -477,11 +477,23 @@ class CrowdServer(object):
         response = self._get(self.rest_url + "/group/membership")
 
         if response.status_code == 200:
+            self.session.headers.update({
+                "Content-type": "application/json",
+                "Accept": "application/json"
+            })
             return xmltodict.parse(response.content)
 
         if response.status_code == 404:
+            self.session.headers.update({
+                "Content-type": "application/json",
+                "Accept": "application/json"
+            })
             return None
 
+        self.session.headers.update({
+            "Content-type": "application/json",
+            "Accept": "application/json"
+        })
         raise CrowdError
 
     def get_group_users_direct(self, groupname):

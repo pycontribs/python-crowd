@@ -6,11 +6,11 @@ setup(
     name='Crowd',
     license='BSD',
     py_modules=['crowd'],
-    version='0.10.2',
-    install_requires=['requests','xmltodict'],
+    version='0.10.6',
+    install_requires=['requests'],
 
     description='A python client to the Atlassian Crowd REST API',
-    long_description=open(os.path.join(__dir__, 'README.rst')).read(),
+    #long_description=open(os.path.join(__dir__, 'README.rst')).read(),
 
     author='Alexander Else',
     author_email='aelse@else.id.au',
