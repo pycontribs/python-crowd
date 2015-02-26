@@ -715,8 +715,8 @@ class CrowdServer(object):
             CrowdError: Unexpected response
         """
         response = self._delete(self.rest_url + "/group/child-group/direct",
-                              data=json.dumps({"name": childgroupname}),
-                              params={"groupname": parentgroupname})
+                                    params={"groupname": parentgroupname,
+                                    "child-groupname": childgroupname})
 
         if response.status_code == 201:
             return True
