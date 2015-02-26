@@ -698,6 +698,38 @@ class CrowdServer(object):
 
         raise CrowdError("received server response %d" % response.status_code)
 
+    def remove_child_group_to_group(self, parentgroupname, childgroupname):
+        """Make user a direct member of a group
+
+        Args:
+            username: The user name.
+            groupname: The group name.
+
+        Returns:
+            True: If successful
+
+        Raises:
+            CrowdNoSuchUser: The user does not exist
+            CrowdNoSuchGroup: The group does not exist
+            CrowdUserExists: The user is already a member
+            CrowdError: Unexpected response
+        """
+        response = self._delete(self.rest_url + "/group/child-group/direct",
+                              data=json.dumps({"name": childgroupname}),
+                              params={"groupname": parentgroupname})
+
+        if response.status_code == 201:
+            return True
+
+        if response.status_code == 400:
+            raise CrowdNoSuchUser
+
+        if response.status_code == 404:
+            raise CrowdNoSuchGroup
+
+        raise CrowdError("received server response %d" % response.status_code)
+
+
     def remove_user_from_group(self, username, groupname):
         """Remove user as a direct member of a group
 
