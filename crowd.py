@@ -698,7 +698,7 @@ class CrowdServer(object):
 
         raise CrowdError("received server response %d" % response.status_code)
 
-    def remove_child_group_to_group(self, parentgroupname, childgroupname):
+    def remove_child_group_from_group(self, parentgroupname, childgroupname):
         """Make user a direct member of a group
 
         Args:
@@ -718,14 +718,15 @@ class CrowdServer(object):
                                     params={"groupname": parentgroupname,
                                     "child-groupname": childgroupname})
 
-        if response.status_code == 201:
+        if response.status_code == 204:
             return True
 
-        if response.status_code == 400:
-            raise CrowdNoSuchUser
+        if response.status_code == 403:
+            raise CrowdAuthDenied("application is not allowed to delete group")
 
         if response.status_code == 404:
-            raise CrowdNoSuchGroup
+            # User did not exist
+            raise CrowdNoSuchUser
 
         raise CrowdError("received server response %d" % response.status_code)
 
