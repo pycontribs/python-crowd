@@ -58,6 +58,9 @@ class testCrowdAuth(unittest.TestCase):
         requests.get(cls.base_url + '/terminate')
         cls.server_thread.join()
 
+    def setUp(self):
+        crowdserverstub.mode_read_only = False
+
     def testStubUserExists(self):
         """Check that server stub recognises user"""
         result = crowdserverstub.user_exists(USER)
@@ -214,6 +217,15 @@ class testCrowdAuth(unittest.TestCase):
                                      password='hello')
         self.assertTrue(result)
 
+    def testUserCreationWhenReadOnly(self):
+        crowdserverstub.mode_read_only = True
+        def f():
+            result = self.crowd.add_user('newuser1',
+                                         email='me@test.example',
+                                         password='hello',
+                                         raise_on_error=True)
+        self.assertRaisesRegexp(RuntimeError, "This directory is read-only.", f)
+
     def testUserCreationDuplicate(self):
         result = self.crowd.add_user('newuser1',
                                      email='me@test.example',
@@ -223,6 +235,13 @@ class testCrowdAuth(unittest.TestCase):
                                      email='me@test.example',
                                      password='hello')
         self.assertFalse(result)
+
+        def f():
+            result = self.crowd.add_user('newuser1',
+                                         email='me@test.example',
+                                         password='hello',
+                                         raise_on_error=True)
+        self.assertRaisesRegexp(RuntimeError, "User already exists.", f)
 
     def testUserCreationMissingPassword(self):
         def f():
@@ -243,6 +262,44 @@ class testCrowdAuth(unittest.TestCase):
                                          password='hello',
                                          invalid_param='bad argument')
         self.assertRaisesRegexp(ValueError, "invalid argument .*", f)
+
+    def testPasswordChangeSuccess(self):
+        result = self.crowd.change_password(USER, 'newpassword')
+        self.assertTrue(result)
+
+        result = self.crowd.auth_user(USER, PASS)
+        self.assertIs(result, None)
+
+        result = self.crowd.auth_user(USER, 'newpassword')
+        self.assertIsInstance(result, dict)
+
+        # recover oliginal password for next test
+        result = self.crowd.change_password(USER, PASS)
+
+    def testPasswordChangeWhenReadOnly(self):
+        crowdserverstub.mode_read_only = True
+
+        result = self.crowd.change_password(USER, 'newpassword')
+        self.assertFalse(result)
+
+        result = self.crowd.auth_user(USER, PASS)
+        self.assertIsInstance(result, dict)
+
+        def f():
+            result = self.crowd.change_password(USER, 'newpassword', raise_on_error=True)
+        self.assertRaisesRegexp(RuntimeError, "This directory is read-only.", f)
+
+        result = self.crowd.auth_user(USER, PASS)
+        self.assertIsInstance(result, dict)
+
+    def testPasswordChangeInvaliduser(self):
+        result = self.crowd.change_password('invaliduser', 'newpassword')
+        self.assertFalse(result)
+
+        def f():
+            result = self.crowd.change_password('invaliduser', 'newpassword', raise_on_error=True)
+        self.assertRaisesRegexp(RuntimeError, "User <invaliduser> does not exist.", f)
+
 
 if __name__ == "__main__":
     unittest.main()
