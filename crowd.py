@@ -229,15 +229,9 @@ class CrowdServer(object):
 
             None: If authentication failed.
         """
-
-        params = {
-            "validationFactors": [
-                {"name": "remote_address", "value": remote, }
-            ]
-        }
-
+        
         url = self.rest_url + "/session/%s" % token
-        response = self._post(url, data=json.dumps(params), params={"expand": "user"})
+        response = self._get(url)
 
         # For consistency between methods use None rather than False
         # If token validation failed for any reason return None
