@@ -82,6 +82,20 @@ class CrowdServer(object):
         req = self.session.post(*args, **kwargs)
         return req
 
+    def _put(self, *args, **kwargs):
+        """Wrapper around Requests for PUT requests
+
+        Returns:
+            Response:
+                A Requests Response object
+        """
+
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = self.timeout
+
+        req = self.session.put(*args, **kwargs)
+        return req
+
     def _delete(self, *args, **kwargs):
         """Wrapper around Requests for DELETE requests
 
@@ -257,11 +271,12 @@ class CrowdServer(object):
         # Otherwise return True
         return True
 
-    def add_user(self, username, **kwargs):
+    def add_user(self, username, raise_on_error=False, **kwargs):
         """Add a user to the directory
 
         Args:
             username: The account username
+            raise_on_error: optional (default: False)
             **kwargs: key-value pairs:
                           password: mandatory
                           email: mandatory
@@ -314,6 +329,9 @@ class CrowdServer(object):
         if response.status_code == 201:
             return True
 
+        if raise_on_error:
+            raise RuntimeError(response.json()['message'])
+
         return False
 
 
@@ -334,6 +352,33 @@ class CrowdServer(object):
             return None
 
         return response.json()
+
+    def change_password(self, username, newpassword, raise_on_error=False):
+        """Change new password for a user
+
+        Args:
+            username: The account username.
+
+            newpassword: The account new password.
+
+            raise_on_error: optional (default: False)
+
+        Returns:
+            True: Succeeded
+            False: If unsuccessful
+        """
+
+        response = self._put(self.rest_url + "/user/password",
+            data=json.dumps({"value": newpassword}),
+            params={"username": username})
+
+        if response.ok:
+            return True
+
+        if raise_on_error:
+            raise RuntimeError(response.json()['message'])
+
+        return False
 
     def get_groups(self, username):
         """Retrieves a list of group names that have <username> as a direct member.

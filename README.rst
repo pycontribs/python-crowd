@@ -72,3 +72,4 @@ to the end of this list and include the change in your pull request.
 * Terin Stock (@terinjokes)
 * Sorin Sbarnea (@ssbarnea)
 * Christian Schläppi (@nevious)
+* Yuichi Tokutomi (@Tommy1969)

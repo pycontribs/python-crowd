@@ -38,6 +38,8 @@ user_attributes = {}
 group_auth = {}
 session_auth = {}
 
+mode_read_only = False
+
 def add_app(app_name, app_pass):
     global app_auth
     app_auth[app_name] = app_pass
@@ -133,6 +135,10 @@ def add_user(username, password, attributes=None):
     user_auth[username] = password
     if attributes:
         user_attributes[username] = attributes
+
+def change_password(username, password):
+    global user_auth
+    user_auth[username] = password
 
 def remove_user(username):
     global user_auth
@@ -420,16 +426,49 @@ class CrowdServerStub(BaseHTTPRequestHandler):
         username = self.json_data['name']
         password = self.json_data['password']
 
-        if not user_exists(username):
-            add_user(username, password, attributes=self.json_data)
-            self.send_response(201)
+        response = {}
+        response_code = 0
+
+        if mode_read_only:
+            response["reason"] = "UNSUPPORTED_OPERATION"
+            response["message"] = "This directory is read-only."
+            response_code = 403
+        elif user_exists(username):
+            response["reason"] = "INVALID_USER"
+            response["message"] = "User already exists."
+            response_code = 400
         else:
-            response = {u'reason': u'INVALID_USER',
-                        u'message': u'User already exists'}
-            self.send_response(400)
-            self.send_header("Content-type", "application/json")
-            self.end_headers()
-            self.wfile.write(json.dumps(response).encode('ascii'))
+            add_user(username, password, attributes=self.json_data)
+            response_code = 201
+
+        self.send_response(response_code)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(response).encode('ascii'))
+
+    def _change_password(self):
+        username = self.get_params['username'][0]
+        password = self.json_data['value']
+
+        response = {}
+        response_code = 0
+
+        if mode_read_only:
+            response["reason"] = "UNSUPPORTED_OPERATION"
+            response["message"] = "This directory is read-only."
+            response_code = 403
+        elif not user_exists(username):
+            response["reason"] = "USER_NOT_FOUND"
+            response["message"] = 'User <%s> does not exist.' % username
+            response_code = 400
+        else:
+            change_password(username, password)
+            response_code = 204
+
+        self.send_response(response_code)
+        self.send_header("Content-type", "application/json")
+        self.end_headers()
+        self.wfile.write(json.dumps(response).encode('ascii'))
 
     def _do_COMMON(self, data={}):
         handlers = [
@@ -492,6 +531,12 @@ class CrowdServerStub(BaseHTTPRequestHandler):
                 "require_auth": True,
                 "method": "POST",
             },
+            {
+                "url": r"/rest/usermanagement/1/user/password$",
+                "action": self._change_password,
+                "require_auth": True,
+                "method": "PUT",
+            },
 
 
             # Default handler for unmatched requests
@@ -546,7 +591,18 @@ class CrowdServerStub(BaseHTTPRequestHandler):
         self._do_COMMON(data=jdata)
 
     def do_PUT(self):
-        self._do_COMMON()
+        ct = self.headers.get('Content-Type')
+        if ct != 'application/json':
+            print("Received unwanted Content-Type (%s) in PUT" % ct)
+
+        cl = int(self.headers.get('Content-Length', 0))
+        if cl > 0:
+            data = self.rfile.read(cl).decode('utf-8')
+        else:
+            data = ""
+
+        jdata = json.loads(data)
+        self._do_COMMON(data=jdata)
 
     def do_DELETE(self):
         self._do_COMMON()
