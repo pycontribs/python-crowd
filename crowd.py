@@ -163,7 +163,7 @@ class CrowdServer(object):
         # ...otherwise return a dictionary of user attributes
         return response.json()
 
-    def get_session(self, username, password, remote="127.0.0.1"):
+    def get_session(self, username, password, remote="127.0.0.1", proxy=""):
         """Create a session for a user.
 
         Attempts to create a user session on the Crowd server.
@@ -179,6 +179,8 @@ class CrowdServer(object):
                 The host you run this program on may need to be configured
                 in Crowd as a trusted proxy for this to work.
 
+            proxy: Value of X-Forwarded-For server header.
+
         Returns:
             dict:
                 A dict mapping of user attributes if the application
@@ -193,7 +195,8 @@ class CrowdServer(object):
             "password": password,
             "validation-factors": {
                 "validationFactors": [
-                    {"name": "remote_address", "value": remote, }
+                    {"name": "remote_address", "value": remote, },
+                    {"name": "X-Forwarded-For", "value": proxy, },
                 ]
             }
         }
@@ -209,7 +212,7 @@ class CrowdServer(object):
         # Otherwise return the user object
         return response.json()
 
-    def validate_session(self, token, remote="127.0.0.1"):
+    def validate_session(self, token, remote="127.0.0.1", proxy=""):
         """Validate a session token.
 
         Validate a previously acquired session token against the
@@ -220,6 +223,8 @@ class CrowdServer(object):
             token: The session token.
 
             remote: The remote address of the user.
+
+            proxy: Value of X-Forwarded-For server header
 
         Returns:
             dict:
@@ -232,7 +237,8 @@ class CrowdServer(object):
 
         params = {
             "validationFactors": [
-                {"name": "remote_address", "value": remote, }
+                {"name": "remote_address", "value": remote, },
+                {"name": "X-Forwarded-For", "value": proxy, },
             ]
         }
 
