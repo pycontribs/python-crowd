@@ -107,6 +107,20 @@ class CrowdServer(object):
         req = self.session.post(*args, **kwargs)
         return req
 
+    def _put(self, *args, **kwargs):
+        """Wrapper around Requests for PUT requests
+
+        Returns:
+            Response:
+                A Requests Response object
+        """
+
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = self.timeout
+
+        req = self.session.put(*args, **kwargs)
+        return req
+
     def _delete(self, *args, **kwargs):
         """Wrapper around Requests for DELETE requests
 
@@ -180,6 +194,7 @@ class CrowdServer(object):
             raise CrowdAuthFailure(j['message'])
 
         raise CrowdError
+
 
     def get_session(self, username, password, remote="127.0.0.1"):
         """Create a session for a user.
@@ -356,6 +371,33 @@ class CrowdServer(object):
 
         raise CrowdError
 
+    def change_password(self, username, newpassword, raise_on_error=False):
+        """Change new password for a user
+
+        Args:
+            username: The account username.
+
+            newpassword: The account new password.
+
+            raise_on_error: optional (default: False)
+
+        Returns:
+            True: Succeeded
+            False: If unsuccessful
+        """
+
+        response = self._put(self.rest_url + "/user/password",
+            data=json.dumps({"value": newpassword}),
+            params={"username": username})
+
+        if response.ok:
+            return True
+
+        if raise_on_error:
+            raise RuntimeError(response.json()['message'])
+
+        return False
+    
     def remove_user(self, username):
         """Remove a user from the directory
 
