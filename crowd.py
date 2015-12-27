@@ -397,7 +397,7 @@ class CrowdServer(object):
             raise RuntimeError(response.json()['message'])
 
         return False
-    
+
     def remove_user(self, username):
         """Remove a user from the directory
 
