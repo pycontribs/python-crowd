@@ -66,11 +66,12 @@ class CrowdServer(object):
     A CA_BUNDLE path can also be provided.
     """
 
-    def __init__(self, crowd_url, app_name, app_pass, ssl_verify=False):
+    def __init__(self, crowd_url, app_name, app_pass, ssl_verify=False, timeout=None):
         self.crowd_url = crowd_url
         self.app_name = app_name
         self.app_pass = app_pass
         self.rest_url = crowd_url.rstrip("/") + "/rest/usermanagement/1"
+        self.timeout = timeout
 
         self.session = requests.Session()
         self.session.verify = ssl_verify
