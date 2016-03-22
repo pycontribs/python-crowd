@@ -163,7 +163,7 @@ class CrowdServer(object):
         # ...otherwise return a dictionary of user attributes
         return response.json()
 
-    def get_session(self, username, password, remote="127.0.0.1"):
+    def get_session(self, username, password, remote="127.0.0.1", proxy=None):
         """Create a session for a user.
 
         Attempts to create a user session on the Crowd server.
@@ -179,6 +179,8 @@ class CrowdServer(object):
                 The host you run this program on may need to be configured
                 in Crowd as a trusted proxy for this to work.
 
+            proxy: Value of X-Forwarded-For server header.
+
         Returns:
             dict:
                 A dict mapping of user attributes if the application
@@ -193,10 +195,13 @@ class CrowdServer(object):
             "password": password,
             "validation-factors": {
                 "validationFactors": [
-                    {"name": "remote_address", "value": remote, }
+                    {"name": "remote_address", "value": remote, },
                 ]
             }
         }
+
+        if proxy:
+            params["validation-factors"]["validationFactors"].append({"name": "X-Forwarded-For", "value": proxy, })
 
         response = self._post(self.rest_url + "/session",
                               data=json.dumps(params),
@@ -209,7 +214,7 @@ class CrowdServer(object):
         # Otherwise return the user object
         return response.json()
 
-    def validate_session(self, token, remote="127.0.0.1"):
+    def validate_session(self, token, remote="127.0.0.1", proxy=None):
         """Validate a session token.
 
         Validate a previously acquired session token against the
@@ -220,6 +225,8 @@ class CrowdServer(object):
             token: The session token.
 
             remote: The remote address of the user.
+
+            proxy: Value of X-Forwarded-For server header
 
         Returns:
             dict:
@@ -232,9 +239,12 @@ class CrowdServer(object):
 
         params = {
             "validationFactors": [
-                {"name": "remote_address", "value": remote, }
+                {"name": "remote_address", "value": remote, },
             ]
         }
+
+        if proxy:
+            params["validation-factors"]["validationFactors"].append({"name": "X-Forwarded-For", "value": proxy, })
 
         url = self.rest_url + "/session/%s" % token
         response = self._post(url, data=json.dumps(params), params={"expand": "user"})
@@ -377,6 +387,25 @@ class CrowdServer(object):
 
         if raise_on_error:
             raise RuntimeError(response.json()['message'])
+
+        return False
+
+    def send_password_reset_link(self, username):
+        """Sends the user a password reset link (by email)
+
+        Args:
+            username: The account username.
+
+        Returns:
+            True: Succeeded
+            False: If unsuccessful
+        """
+
+        response = self._post(self.rest_url + "/user/mail/password",
+            params={"username": username})
+
+        if response.ok:
+            return True
 
         return False
 
