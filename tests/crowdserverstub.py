@@ -28,7 +28,10 @@ try:
 except ImportError:
     from urllib import parse as urlparse  # Py3k
 
+from collections import defaultdict
 import json
+from lxml import builder, etree
+
 
 httpd = None
 
@@ -116,6 +119,13 @@ def get_user_group_membership(username):
     except:
         pass
     return []
+
+def get_groups():
+    groups = set()
+    for user, u_groups in group_auth:
+        for group in u_groups:
+            groups.add(group)
+    return list(groups)
 
 def get_group_users(groupname):
     """List of users in the group"""
@@ -405,6 +415,29 @@ class CrowdServerStub(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(json.dumps(response).encode('ascii'))
 
+    def _get_memberships(self):
+        memberships = defaultdict(list)
+        for user, groups in group_auth.items():
+            for group in groups:
+                memberships[group].append(user)
+
+        # create memberships XML
+        root = etree.Element('memberships')
+        for group, user_members in memberships.items():
+            membership = etree.Element('membership', group=group)
+            user_node = etree.Element('users')
+            for user in user_members:
+                user_node.append(etree.Element('user', name=user))
+            membership.append(user_node)
+            membership.append(etree.Element('groups'))
+            root.append(membership)
+
+        self.send_response(200)
+        self.send_header("Content-type", "application/xml")
+        self.end_headers()
+        self.wfile.write("<?xml version='1.0' encoding='utf-8'?>\n")
+        self.wfile.write(etree.tostring(root, pretty_print=True))
+
     def _get_user(self):
         username = self.get_params['username'][0]
         if user_exists(username):
@@ -510,6 +543,12 @@ class CrowdServerStub(BaseHTTPRequestHandler):
             {
                 "url": r"/rest/usermanagement/1/user/group/nested$",
                 "action": self._get_groups,
+                "require_auth": True,
+                "method": "GET",
+            },
+            {
+                "url": r"/rest/usermanagement/1/group/membership$",
+                "action": self._get_memberships,
                 "require_auth": True,
                 "method": "GET",
             },
