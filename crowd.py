@@ -518,9 +518,11 @@ class CrowdServer(object):
             return None
 
         xmltree = lxml.etree.fromstring(response.content)
-        tmp = {}
+        memberships = {}
         for mg in xmltree.findall('membership'):
-            users = [unicode(u.get('name')) for u in mg.find('users').findall('user')]
-            groups = [unicode(g.get('name')) for g in mg.find('groups').findall('group')]
-            tmp[unicode(mg.get('group'))] = (users, groups)
-        return tmp
+            # coerce values to unicode in a python 2 and 3 compatible way
+            group = u'{}'.format(mg.get('group'))
+            users = [u'{}'.format(u.get('name')) for u in mg.find('users').findall('user')]
+            groups = [u'{}'.format(g.get('name')) for g in mg.find('groups').findall('group')]
+            memberships[group] = {u'users': users, u'groups': groups}
+        return memberships
