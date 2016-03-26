@@ -147,7 +147,7 @@ class testCrowdAuth(unittest.TestCase):
         session = self.crowd.get_session(USER, PASS)
         token = session['token']
         result = self.crowd.validate_session(token)
-        self.assertEquals(result['user']['email'], u'%s@does.not.ëxist' % USER)
+        self.assertEqual(result['user']['email'], u'%s@does.not.ëxist' % USER)
 
     def testCreateSessionIdentical(self):
         """Sessions from same remote are identical"""
