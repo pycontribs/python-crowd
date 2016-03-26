@@ -435,7 +435,7 @@ class CrowdServerStub(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-type", "application/xml")
         self.end_headers()
-        self.wfile.write("<?xml version='1.0' encoding='utf-8'?>\n")
+        self.wfile.write("<?xml version='1.0' encoding='utf-8'?>\n".encode('ascii'))
         self.wfile.write(etree.tostring(root, pretty_print=True))
 
     def _get_user(self):
