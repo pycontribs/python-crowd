@@ -324,8 +324,6 @@ class CrowdServer(object):
         if 'email' not in kwargs:
             raise ValueError("missing email")
 
-        components = ['username', 'password', 'first_name',
-                      'last_name', 'display_name', 'active']
         # Populate data with default and mandatory values.
         # A KeyError means a mandatory value was not provided,
         # so raise a ValueError indicating bad args.
@@ -336,7 +334,7 @@ class CrowdServer(object):
                     "last-name": username,
                     "display-name": username,
                     "email": kwargs["email"],
-                    "password": { "value": kwargs["password"] },
+                    "password": {"value": kwargs["password"]},
                     "active": True
                    }
         except KeyError:
@@ -362,7 +360,6 @@ class CrowdServer(object):
             raise RuntimeError(response.json()['message'])
 
         return False
-
 
     def get_user(self, username):
         """Retrieve information about a user
@@ -398,8 +395,8 @@ class CrowdServer(object):
         """
 
         response = self._put(self.rest_url + "/user/password",
-            data=json.dumps({"value": newpassword}),
-            params={"username": username})
+                             data=json.dumps({"value": newpassword}),
+                             params={"username": username})
 
         if response.ok:
             return True
@@ -421,7 +418,7 @@ class CrowdServer(object):
         """
 
         response = self._post(self.rest_url + "/user/mail/password",
-            params={"username": username})
+                              params={"username": username})
 
         if response.ok:
             return True
@@ -511,8 +508,8 @@ class CrowdServer(object):
 
         Returns:
             dict:
-		key: group name
-		value: (array of users, array of groups)
+        key: group name
+        value: (array of users, array of groups)
         """
 
         response = self._get_xml(self.rest_url + "/group/membership")
@@ -525,5 +522,5 @@ class CrowdServer(object):
         for mg in xmltree.findall('membership'):
             users = [unicode(u.get('name')) for u in mg.find('users').findall('user')]
             groups = [unicode(g.get('name')) for g in mg.find('groups').findall('group')]
-            tmp[unicode(mg.get('group'))]=(users,groups)
+            tmp[unicode(mg.get('group'))] = (users, groups)
         return tmp
