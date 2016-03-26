@@ -503,7 +503,7 @@ class CrowdServer(object):
 
         return True
 
-    def get_membership(self):
+    def get_memberships(self):
         """Fetches all group memberships.
 
         Returns:
