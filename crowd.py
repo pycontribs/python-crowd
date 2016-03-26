@@ -526,3 +526,28 @@ class CrowdServer(object):
             groups = [u'{}'.format(g.get('name')) for g in mg.find('groups').findall('group')]
             memberships[group] = {u'users': users, u'groups': groups}
         return memberships
+
+    def search(self, search_string):
+        """Does a search.
+
+        Args:
+            ??
+            search_string: the string to search for.
+
+
+        Returns:
+            json results:
+                Returns search results.
+        """
+
+        response = self._get(self.rest_url + "/search",
+                             params={"entity-type": "user",
+                                     "expand":"user",
+                                      "property-search-restriction":{ "property":{ "name":"email","type":"string" },
+                                                                      "match-mode":"CONTAINS",
+                                                                      "value":search_string } } )
+
+        if not response.ok:
+            return None
+
+        return response.json()
