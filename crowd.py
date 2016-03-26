@@ -9,7 +9,7 @@
 
 import json
 import requests
-import lxml.etree
+from lxml import etree
 
 
 class CrowdServer(object):
@@ -38,23 +38,11 @@ class CrowdServer(object):
         self.app_name = app_name
         self.app_pass = app_pass
         self.rest_url = crowd_url.rstrip("/") + "/rest/usermanagement/1"
+        self.ssl_verify = ssl_verify
         self.timeout = timeout
 
-        self.session = requests.Session()
-        self.session.verify = ssl_verify
-        self.session.auth = requests.auth.HTTPBasicAuth(app_name, app_pass)
-        self.session.headers.update({
-            "Content-type": "application/json",
-            "Accept": "application/json"
-        })
-
-        self.session_xml = requests.Session()
-        self.session_xml.verify = ssl_verify
-        self.session_xml.auth = requests.auth.HTTPBasicAuth(app_name, app_pass)
-        self.session_xml.headers.update({
-            "Content-type": "application/xml",
-            "Accept": "application/xml"
-        })
+        self.session = self._build_session(content_type='json')
+        self.session_xml = self._build_session(content_type='xml')
 
     def __str__(self):
         return "Crowd Server at %s" % self.crowd_url
@@ -62,6 +50,17 @@ class CrowdServer(object):
     def __repr__(self):
         return "<CrowdServer('%s', '%s', '%s')>" % \
             (self.crowd_url, self.app_name, self.app_pass)
+
+    def _build_session(self, content_type='json'):
+        headers = {
+            'Content-Type': 'application/{}'.format(content_type),
+            'Accept': 'application/{}'.format(content_type),
+        }
+        session = requests.Session()
+        session.verify = self.ssl_verify
+        session.auth = requests.auth.HTTPBasicAuth(self.app_name, self.app_pass)
+        session.headers.update(headers)
+        return session
 
     def _get(self, *args, **kwargs):
         """Wrapper around Requests for GET requests
@@ -99,6 +98,20 @@ class CrowdServer(object):
             kwargs['timeout'] = self.timeout
 
         req = self.session.post(*args, **kwargs)
+        return req
+
+    def _post_xml(self, *args, **kwargs):
+        """Wrapper around Requests for POST requests
+
+        Returns:
+            Response:
+                A Requests Response object
+        """
+
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = self.timeout
+
+        req = self.session_xml.post(*args, **kwargs)
         return req
 
     def _put(self, *args, **kwargs):
@@ -517,7 +530,7 @@ class CrowdServer(object):
         if not response.ok:
             return None
 
-        xmltree = lxml.etree.fromstring(response.content)
+        xmltree = etree.fromstring(response.content)
         memberships = {}
         for mg in xmltree.findall('membership'):
             # coerce values to unicode in a python 2 and 3 compatible way
@@ -527,25 +540,71 @@ class CrowdServer(object):
             memberships[group] = {u'users': users, u'groups': groups}
         return memberships
 
-    def search(self, search_string):
-        """Does a search.
+    def search(self, entity_type, property_name, search_string):
+        """Performs a user search using the Crowd search API.
+
+        https://developer.atlassian.com/display/CROWDDEV/Crowd+REST+Resources#CrowdRESTResources-SearchResource
 
         Args:
-            ??
+            entity_type: 'user' or 'group'
+            property_name: eg. 'email', 'name'
             search_string: the string to search for.
-
 
         Returns:
             json results:
                 Returns search results.
         """
 
-        response = self._get(self.rest_url + "/search",
-                             params={"entity-type": "user",
-                                     "expand":"user",
-                                      "property-search-restriction":{ "property":{ "name":"email","type":"string" },
-                                                                      "match-mode":"CONTAINS",
-                                                                      "value":search_string } } )
+        params = {
+            "entity-type": entity_type,
+            "expand": entity_type,
+            "property-search-restriction": {
+                "property": {"name": property_name, "type": "STRING"},
+                "match-mode": "CONTAINS",
+                "value": search_string,
+            }
+        }
+
+        params = {
+            'entity-type': entity_type,
+            'expand': entity_type,
+        }
+        # Construct XML payload of the form:
+        # <property-search-restriction>
+        #   <property>
+        #     <name>email</name>
+        #     <type>STRING</type>
+        #   </property>
+        #   <match-mode>EXACTLY_MATCHES</match-mode>
+        #   <value>bob@example.net</value>
+        # </property-search-restriction>
+
+        root = etree.Element('property-search-restriction')
+
+        property_ = etree.Element('property')
+        prop_name = etree.Element('name')
+        prop_name.text = property_name
+        property_.append(prop_name)
+        prop_type = etree.Element('type')
+        prop_type.text = 'STRING'
+        property_.append(prop_type)
+        root.append(property_)
+
+        match_mode = etree.Element('match-mode')
+        match_mode.text = 'CONTAINS'
+        root.append(match_mode)
+
+        value = etree.Element('value')
+        value.text = search_string
+        root.append(value)
+
+        # Construct the XML payload expected by search API
+        payload = '<?xml version="1.0" encoding="UTF-8"?>\n' + etree.tostring(root).decode('utf-8')
+
+        # We're sending XML but would like a JSON response
+        session = self._build_session(content_type='xml')
+        session.headers.update({'Accept': 'application/json'})
+        response = session.post(self.rest_url + "/search", params=params, data=payload, timeout=self.timeout)
 
         if not response.ok:
             return None
