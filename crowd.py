@@ -9,7 +9,7 @@
 
 import json
 import requests
-import lxml.etree
+from lxml import etree
 
 
 class CrowdServer(object):
@@ -38,23 +38,11 @@ class CrowdServer(object):
         self.app_name = app_name
         self.app_pass = app_pass
         self.rest_url = crowd_url.rstrip("/") + "/rest/usermanagement/1"
+        self.ssl_verify = ssl_verify
         self.timeout = timeout
 
-        self.session = requests.Session()
-        self.session.verify = ssl_verify
-        self.session.auth = requests.auth.HTTPBasicAuth(app_name, app_pass)
-        self.session.headers.update({
-            "Content-type": "application/json",
-            "Accept": "application/json"
-        })
-
-        self.session_xml = requests.Session()
-        self.session_xml.verify = ssl_verify
-        self.session_xml.auth = requests.auth.HTTPBasicAuth(app_name, app_pass)
-        self.session_xml.headers.update({
-            "Content-type": "application/xml",
-            "Accept": "application/xml"
-        })
+        self.session = self._build_session(content_type='json')
+        self.session_xml = self._build_session(content_type='xml')
 
     def __str__(self):
         return "Crowd Server at %s" % self.crowd_url
@@ -62,6 +50,17 @@ class CrowdServer(object):
     def __repr__(self):
         return "<CrowdServer('%s', '%s', '%s')>" % \
             (self.crowd_url, self.app_name, self.app_pass)
+
+    def _build_session(self, content_type='json'):
+        headers = {
+            'Content-Type': 'application/{}'.format(content_type),
+            'Accept': 'application/{}'.format(content_type),
+        }
+        session = requests.Session()
+        session.verify = self.ssl_verify
+        session.auth = requests.auth.HTTPBasicAuth(self.app_name, self.app_pass)
+        session.headers.update(headers)
+        return session
 
     def _get(self, *args, **kwargs):
         """Wrapper around Requests for GET requests
@@ -99,6 +98,20 @@ class CrowdServer(object):
             kwargs['timeout'] = self.timeout
 
         req = self.session.post(*args, **kwargs)
+        return req
+
+    def _post_xml(self, *args, **kwargs):
+        """Wrapper around Requests for POST requests
+
+        Returns:
+            Response:
+                A Requests Response object
+        """
+
+        if 'timeout' not in kwargs:
+            kwargs['timeout'] = self.timeout
+
+        req = self.session_xml.post(*args, **kwargs)
         return req
 
     def _put(self, *args, **kwargs):
@@ -324,8 +337,6 @@ class CrowdServer(object):
         if 'email' not in kwargs:
             raise ValueError("missing email")
 
-        components = ['username', 'password', 'first_name',
-                      'last_name', 'display_name', 'active']
         # Populate data with default and mandatory values.
         # A KeyError means a mandatory value was not provided,
         # so raise a ValueError indicating bad args.
@@ -336,7 +347,7 @@ class CrowdServer(object):
                     "last-name": username,
                     "display-name": username,
                     "email": kwargs["email"],
-                    "password": { "value": kwargs["password"] },
+                    "password": {"value": kwargs["password"]},
                     "active": True
                    }
         except KeyError:
@@ -363,7 +374,6 @@ class CrowdServer(object):
 
         return False
 
-
     def get_user(self, username):
         """Retrieve information about a user
 
@@ -382,6 +392,39 @@ class CrowdServer(object):
 
         return response.json()
 
+    def set_active(self, username, active_state):
+        """Set the active state of a user
+
+        Args:
+            username: The account username
+            active_state: True or False
+
+        Returns:
+            True: If successful
+            None: If no user or failure occurred
+        """
+
+        if active_state not in (True, False):
+            raise ValueError("active_state must be True or False")
+
+        user = self.get_user(username)
+        if user is None:
+            return None
+
+        if user['active'] is active_state:
+            # Already in desired state
+            return True
+
+        user['active'] = active_state
+        response = self._put(self.rest_url + "/user",
+                             params={"username": username},
+                             data=json.dumps(user))
+
+        if response.status_code == 204:
+            return True
+
+        return None
+
     def change_password(self, username, newpassword, raise_on_error=False):
         """Change new password for a user
 
@@ -398,8 +441,8 @@ class CrowdServer(object):
         """
 
         response = self._put(self.rest_url + "/user/password",
-            data=json.dumps({"value": newpassword}),
-            params={"username": username})
+                             data=json.dumps({"value": newpassword}),
+                             params={"username": username})
 
         if response.ok:
             return True
@@ -421,7 +464,7 @@ class CrowdServer(object):
         """
 
         response = self._post(self.rest_url + "/user/mail/password",
-            params={"username": username})
+                              params={"username": username})
 
         if response.ok:
             return True
@@ -506,13 +549,13 @@ class CrowdServer(object):
 
         return True
 
-    def get_membership(self):
+    def get_memberships(self):
         """Fetches all group memberships.
 
         Returns:
             dict:
-		key: group name
-		value: (array of users, array of groups)
+        key: group name
+        value: (array of users, array of groups)
         """
 
         response = self._get_xml(self.rest_url + "/group/membership")
@@ -520,10 +563,83 @@ class CrowdServer(object):
         if not response.ok:
             return None
 
-        xmltree = lxml.etree.fromstring(response.content)
-        tmp = {}
+        xmltree = etree.fromstring(response.content)
+        memberships = {}
         for mg in xmltree.findall('membership'):
-            users = [unicode(u.get('name')) for u in mg.find('users').findall('user')]
-            groups = [unicode(g.get('name')) for g in mg.find('groups').findall('group')]
-            tmp[unicode(mg.get('group'))]=(users,groups)
-        return tmp
+            # coerce values to unicode in a python 2 and 3 compatible way
+            group = u'{}'.format(mg.get('group'))
+            users = [u'{}'.format(u.get('name')) for u in mg.find('users').findall('user')]
+            groups = [u'{}'.format(g.get('name')) for g in mg.find('groups').findall('group')]
+            memberships[group] = {u'users': users, u'groups': groups}
+        return memberships
+
+    def search(self, entity_type, property_name, search_string):
+        """Performs a user search using the Crowd search API.
+
+        https://developer.atlassian.com/display/CROWDDEV/Crowd+REST+Resources#CrowdRESTResources-SearchResource
+
+        Args:
+            entity_type: 'user' or 'group'
+            property_name: eg. 'email', 'name'
+            search_string: the string to search for.
+
+        Returns:
+            json results:
+                Returns search results.
+        """
+
+        params = {
+            "entity-type": entity_type,
+            "expand": entity_type,
+            "property-search-restriction": {
+                "property": {"name": property_name, "type": "STRING"},
+                "match-mode": "CONTAINS",
+                "value": search_string,
+            }
+        }
+
+        params = {
+            'entity-type': entity_type,
+            'expand': entity_type,
+        }
+        # Construct XML payload of the form:
+        # <property-search-restriction>
+        #   <property>
+        #     <name>email</name>
+        #     <type>STRING</type>
+        #   </property>
+        #   <match-mode>EXACTLY_MATCHES</match-mode>
+        #   <value>bob@example.net</value>
+        # </property-search-restriction>
+
+        root = etree.Element('property-search-restriction')
+
+        property_ = etree.Element('property')
+        prop_name = etree.Element('name')
+        prop_name.text = property_name
+        property_.append(prop_name)
+        prop_type = etree.Element('type')
+        prop_type.text = 'STRING'
+        property_.append(prop_type)
+        root.append(property_)
+
+        match_mode = etree.Element('match-mode')
+        match_mode.text = 'CONTAINS'
+        root.append(match_mode)
+
+        value = etree.Element('value')
+        value.text = search_string
+        root.append(value)
+
+        # Construct the XML payload expected by search API
+        payload = '<?xml version="1.0" encoding="UTF-8"?>\n' + etree.tostring(root).decode('utf-8')
+
+        # We're sending XML but would like a JSON response
+        session = self._build_session(content_type='xml')
+        session.headers.update({'Accept': 'application/json'})
+        response = session.post(self.rest_url + "/search", params=params, data=payload, timeout=self.timeout)
+
+        if not response.ok:
+            return None
+
+        return response.json()

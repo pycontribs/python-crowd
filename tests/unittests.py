@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with python-crowd.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import print_function
+
 import sys
 sys.path.append('..')
 
@@ -145,7 +147,7 @@ class testCrowdAuth(unittest.TestCase):
         session = self.crowd.get_session(USER, PASS)
         token = session['token']
         result = self.crowd.validate_session(token)
-        self.assertEquals(result['user']['email'], u'%s@does.not.ëxist' % USER)
+        self.assertEqual(result['user']['email'], u'%s@does.not.ëxist' % USER)
 
     def testCreateSessionIdentical(self):
         """Sessions from same remote are identical"""
@@ -193,6 +195,14 @@ class testCrowdAuth(unittest.TestCase):
         crowdserverstub.add_user_to_group(USER, GROUP)
         result = self.crowd.get_nested_group_users(GROUP)
         self.assertEqual(set(result), set([USER]))
+        crowdserverstub.remove_user_from_group(USER, GROUP)
+
+    def testGetMemberships(self):
+        crowdserverstub.add_user_to_group(USER, GROUP)
+        result = self.crowd.get_memberships()
+        self.assertIsNotNone(result)
+        self.assertTrue(GROUP in result)
+        self.assertTrue(USER in result[GROUP][u'users'])
         crowdserverstub.remove_user_from_group(USER, GROUP)
 
     def testUserExists(self):
