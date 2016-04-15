@@ -12,7 +12,7 @@ python-crowd
 
 ------------
 
-.. image:: https://api.travis-ci.org/pycontribs/crowd.svg?branch=master
+.. image:: https://api.travis-ci.org/pycontribs/python-crowd.svg?branch=master
         :target: https://travis-ci.org/pycontribs/python-crowd
 
 .. image:: https://img.shields.io/pypi/status/crowd.svg
