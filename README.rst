@@ -1,6 +1,26 @@
 python-crowd
 ============
 
+.. image:: https://img.shields.io/pypi/pyversions/crowd.svg
+        :target: https://pypi.python.org/pypi/jira/
+
+.. image:: https://img.shields.io/pypi/l/crowd.svg
+        :target: https://pypi.python.org/pypi/crowd/
+
+.. image:: https://img.shields.io/pypi/dm/crowd.svg
+        :target: https://pypi.python.org/pypi/crowd/
+
+------------
+
+.. image:: https://api.travis-ci.org/pycontribs/crowd.svg?branch=master
+        :target: https://travis-ci.org/pycontribs/crowd
+
+.. image:: https://img.shields.io/pypi/status/crowd.svg
+        :target: https://pypi.python.org/pypi/crowd/
+
+.. image:: https://img.shields.io/coveralls/pycontribs/crowd.svg
+        :target: https://coveralls.io/r/pycontribs/crowd
+
 python-crowd is a python client library to the Atlassian Crowd REST API.
 
 This library may be useful to you if you wish to create an application
