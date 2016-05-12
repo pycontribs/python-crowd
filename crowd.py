@@ -197,7 +197,7 @@ class CrowdServer(object):
         raise CrowdError
 
 
-    def get_session(self, username, password, remote="127.0.0.1"):
+    def get_session(self, username, password, remote="127.0.0.1", proxy=None):
         """Create a session for a user.
 
         Attempts to create a user session on the Crowd server.
@@ -232,6 +232,8 @@ class CrowdServer(object):
                 ]
             }
         }
+        if proxy:
+            params["validation-factors"]["validationFactors"].append({"name": "X-Forwarded-For", "value": proxy, })
 
         response = self._post(self.rest_url + "/session",
                               data=json.dumps(params),
@@ -246,7 +248,7 @@ class CrowdServer(object):
 
         raise CrowdError
 
-    def validate_session(self, token, remote="127.0.0.1"):
+    def validate_session(self, token, remote="127.0.0.1", proxy=None):
         """Validate a session token.
 
         Validate a previously acquired session token against the
@@ -273,6 +275,8 @@ class CrowdServer(object):
                 {"name": "remote_address", "value": remote, }
             ]
         }
+        if proxy:
+            params["validationFactors"].append({"name": "X-Forwarded-For", "value": proxy, })
 
         url = self.rest_url + "/session/%s" % token
         response = self._post(url, data=json.dumps(params),
