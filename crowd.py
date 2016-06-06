@@ -513,6 +513,15 @@ class CrowdServer(object):
 
         raise CrowdError
 
+    def get_group_by_groupname(self, groupname):
+        response = self._get(self.rest_url + "/group",
+                             params={"groupname": groupname})
+
+        if response.status_code == 200:
+            return True
+
+        return False
+
     def get_child_group_direct(self, groupname):
         """Retrieves the groups that are direct children of the specified group
 
