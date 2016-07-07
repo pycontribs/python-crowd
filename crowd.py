@@ -133,6 +133,17 @@ class CrowdServer(object):
         req = self.session.delete(*args, **kwargs)
         return req
 
+    def _build_session(self, content_type='json'):
+        headers = {
+            'Content-Type': 'application/{}'.format(content_type),
+            'Accept': 'application/{}'.format(content_type),
+        }
+        session = requests.Session()
+        session.verify = self.ssl_verify
+        session.auth = requests.auth.HTTPBasicAuth(self.app_name, self.app_pass)
+        session.headers.update(headers)
+        return session
+
     def auth_ping(self):
         """Test that application can authenticate to Crowd.
 
