@@ -76,6 +76,7 @@ class CrowdServer(object):
 
         self.session = requests.Session()
         self.session.verify = ssl_verify
+        self.ssl_verify = ssl_verify
         self.session.auth = requests.auth.HTTPBasicAuth(app_name, app_pass)
         self.session.headers.update({
             "Content-type": "application/json",
