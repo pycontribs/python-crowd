@@ -10,7 +10,7 @@
 import json
 import requests
 import xmltodict
-form lxml import etree
+from lxml import etree
 
 class CrowdAuthFailure(Exception):
     """A failure occurred while performing an authentication operation"""
