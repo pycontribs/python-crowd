@@ -765,7 +765,7 @@ class CrowdServer(object):
         if response.status_code == 409:
             raise CrowdUserExists
 
-        return False
+        raise CrowdError("received server response %d" % response.status_code)
 
     def add_child_group_to_group(self, parentgroupname, childgroupname):
         """Make user a direct member of a group
@@ -923,6 +923,7 @@ class CrowdServer(object):
         params = {
             "entity-type": entity_type,
             "expand": entity_type,
+            "max-results": 10000,
             "property-search-restriction": {
                 "property": {"name": property_name, "type": "STRING"},
                 "match-mode": "CONTAINS",
@@ -933,6 +934,7 @@ class CrowdServer(object):
         params = {
             'entity-type': entity_type,
             'expand': entity_type,
+            'max-results': 10000,
         }
         # Construct XML payload of the form:
         # <property-search-restriction>
