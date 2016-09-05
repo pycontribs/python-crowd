@@ -765,7 +765,7 @@ class CrowdServer(object):
         if response.status_code == 409:
             raise CrowdUserExists
 
-        raise CrowdError("received server response %d" % response.status_code)
+        return False
 
     def add_child_group_to_group(self, parentgroupname, childgroupname):
         """Make user a direct member of a group
