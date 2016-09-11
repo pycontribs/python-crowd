@@ -14,7 +14,7 @@ setup(
 
     author='Alexander Else',
     author_email='aelse@else.id.au',
-    url='https://github.com/aelse/python-crowd',
+    url='https://github.com/pycontribs/python-crowd',
 
     classifiers=[
         "Development Status :: 4 - Beta",
