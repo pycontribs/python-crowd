@@ -34,7 +34,7 @@ Documentation
 
 Docs are built automatically by sphinx. You can build them yourself
 in the doc directory or access them at
-<http://aelse.github.com/python-crowd/>.
+http://python-crowd.readthedocs.io/en/latest/
 
 Examples
 ========
