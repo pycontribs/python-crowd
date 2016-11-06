@@ -10,7 +10,6 @@
 import json
 import requests
 import xmltodict
-from lxml import etree
 
 class CrowdAuthFailure(Exception):
     """A failure occurred while performing an authentication operation"""
@@ -76,7 +75,6 @@ class CrowdServer(object):
 
         self.session = requests.Session()
         self.session.verify = ssl_verify
-        self.ssl_verify = ssl_verify
         self.session.auth = requests.auth.HTTPBasicAuth(app_name, app_pass)
         self.session.headers.update({
             "Content-type": "application/json",
@@ -133,17 +131,6 @@ class CrowdServer(object):
         """
         req = self.session.delete(*args, **kwargs)
         return req
-
-    def _build_session(self, content_type='json'):
-        headers = {
-            'Content-Type': 'application/{}'.format(content_type),
-            'Accept': 'application/{}'.format(content_type),
-        }
-        session = requests.Session()
-        session.verify = self.ssl_verify
-        session.auth = requests.auth.HTTPBasicAuth(self.app_name, self.app_pass)
-        session.headers.update(headers)
-        return session
 
     def auth_ping(self):
         """Test that application can authenticate to Crowd.
@@ -210,7 +197,7 @@ class CrowdServer(object):
         raise CrowdError
 
 
-    def get_session(self, username, password=None, remote="127.0.0.1", proxy=None):
+    def get_session(self, username, password=None, remote="127.0.0.1"):
         """Create a session for a user.
 
         Attempts to create a user session on the Crowd server.
@@ -236,26 +223,24 @@ class CrowdServer(object):
             CrowdAuthFailure: If authentication failed.
         """
 
-        params = {
-            "validate-password": True,
+        data = {
             "username": username,
             "password": password,
-            # "validation-factors": {
-            #     "validationFactors": [
-            #         {"name": "remote_address", "value": remote, }
-            #     ]
-            # }
+            "validation-factors": {
+                "validationFactors": [
+                    {"name": "remote_address", "value": remote, }
+                ]
+            }
         }
 
         if password is None:
-            params["validate-password"] = False
-
-        # if proxy:
-        #     params["validation-factors"]["validationFactors"].append({"name": "X-Forwarded-For", "value": proxy, })
+            params = {"expand": "user", "validate-password": "false"}
+        else:
+            params = {"expand": "user"}
 
         response = self._post(self.rest_url + "/session",
-                              data=json.dumps(params),
-                              params={"expand": "user"})
+                              data=json.dumps(data),
+                              params=params)
 
         if response.status_code == 201:
             return response.json()
@@ -266,7 +251,7 @@ class CrowdServer(object):
 
         raise CrowdError
 
-    def validate_session(self, token, remote="127.0.0.1", proxy=None):
+    def validate_session(self, token, remote="127.0.0.1"):
         """Validate a session token.
 
         Validate a previously acquired session token against the
@@ -293,8 +278,6 @@ class CrowdServer(object):
                 {"name": "remote_address", "value": remote, }
             ]
         }
-        if proxy:
-            params["validationFactors"].append({"name": "X-Forwarded-For", "value": proxy, })
 
         url = self.rest_url + "/session/%s" % token
         response = self._post(url, data=json.dumps(params),
@@ -910,75 +893,72 @@ class CrowdServer(object):
 
         return True
 
-    def search(self, entity_type, property_name, search_string):
-        """Performs a user search using the Crowd search API.
-
-        https://developer.atlassian.com/display/CROWDDEV/Crowd+REST+Resources#CrowdRESTResources-SearchResource
-
-        Args:
-            entity_type: 'user' or 'group'
-            property_name: eg. 'email', 'name'
-            search_string: the string to search for.
-
-        Returns:
-            json results:
-                Returns search results.
-        """
-
-        params = {
-            "entity-type": entity_type,
-            "expand": entity_type,
-            "max-results": 10000,
-            "property-search-restriction": {
-                "property": {"name": property_name, "type": "STRING"},
-                "match-mode": "CONTAINS",
-                "value": search_string,
-            }
-        }
-
-        params = {
-            'entity-type': entity_type,
-            'expand': entity_type,
-            'max-results': 10000,
-        }
-        # Construct XML payload of the form:
-        # <property-search-restriction>
-        #   <property>
-        #     <name>email</name>
-        #     <type>STRING</type>
-        #   </property>
-        #   <match-mode>EXACTLY_MATCHES</match-mode>
-        #   <value>bob@example.net</value>
-        # </property-search-restriction>
-
-        root = etree.Element('property-search-restriction')
-
-        property_ = etree.Element('property')
-        prop_name = etree.Element('name')
-        prop_name.text = property_name
-        property_.append(prop_name)
-        prop_type = etree.Element('type')
-        prop_type.text = 'STRING'
-        property_.append(prop_type)
-        root.append(property_)
-
-        match_mode = etree.Element('match-mode')
-        match_mode.text = 'CONTAINS'
-        root.append(match_mode)
-
-        value = etree.Element('value')
-        value.text = search_string
-        root.append(value)
-
-        # Construct the XML payload expected by search API
-        payload = '<?xml version="1.0" encoding="UTF-8"?>\n' + etree.tostring(root).decode('utf-8')
-
-        # We're sending XML but would like a JSON response
-        session = self._build_session(content_type='xml')
-        session.headers.update({'Accept': 'application/json'})
-        response = session.post(self.rest_url + "/search", params=params, data=payload, timeout=self.timeout)
-
-        if not response.ok:
-            return None
-
-        return response.json()
+    # def search(self, entity_type, property_name, search_string):
+    #     """Performs a user search using the Crowd search API.
+    #     https://developer.atlassian.com/display/CROWDDEV/Crowd+REST+Resources#CrowdRESTResources-SearchResource
+    #     Args:
+    #         entity_type: 'user' or 'group'
+    #         property_name: eg. 'email', 'name'
+    #         search_string: the string to search for.
+    #     Returns:
+    #         json results:
+    #             Returns search results.
+    #     """
+    #
+    #     params = {
+    #         "entity-type": entity_type,
+    #         "expand": entity_type,
+    #         "max-results": 10000,
+    #         "property-search-restriction": {
+    #             "property": {"name": property_name, "type": "STRING"},
+    #             "match-mode": "CONTAINS",
+    #             "value": search_string,
+    #         }
+    #     }
+    #
+    #     params = {
+    #         'entity-type': entity_type,
+    #         'expand': entity_type,
+    #         'max-results': 10000,
+    #     }
+    #     # Construct XML payload of the form:
+    #     # <property-search-restriction>
+    #     #   <property>
+    #     #     <name>email</name>
+    #     #     <type>STRING</type>
+    #     #   </property>
+    #     #   <match-mode>EXACTLY_MATCHES</match-mode>
+    #     #   <value>bob@example.net</value>
+    #     # </property-search-restriction>
+    #
+    #     root = etree.Element('property-search-restriction')
+    #
+    #     property_ = etree.Element('property')
+    #     prop_name = etree.Element('name')
+    #     prop_name.text = property_name
+    #     property_.append(prop_name)
+    #     prop_type = etree.Element('type')
+    #     prop_type.text = 'STRING'
+    #     property_.append(prop_type)
+    #     root.append(property_)
+    #
+    #     match_mode = etree.Element('match-mode')
+    #     match_mode.text = 'CONTAINS'
+    #     root.append(match_mode)
+    #
+    #     value = etree.Element('value')
+    #     value.text = search_string
+    #     root.append(value)
+    #
+    #     # Construct the XML payload expected by search API
+    #     payload = '<?xml version="1.0" encoding="UTF-8"?>\n' + etree.tostring(root).decode('utf-8')
+    #
+    #     # We're sending XML but would like a JSON response
+    #     session = self._build_session(content_type='xml')
+    #     session.headers.update({'Accept': 'application/json'})
+    #     response = session.post(self.rest_url + "/search", params=params, data=payload, timeout=self.timeout)
+    #
+    #     if not response.ok:
+    #         return None
+    #
+    #     return response.json()
