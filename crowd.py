@@ -210,7 +210,7 @@ class CrowdServer(object):
         raise CrowdError
 
 
-    def get_session(self, username, password, remote="127.0.0.1", proxy=None):
+    def get_session(self, username, password=None, remote="127.0.0.1", proxy=None):
         """Create a session for a user.
 
         Attempts to create a user session on the Crowd server.
@@ -237,6 +237,7 @@ class CrowdServer(object):
         """
 
         params = {
+            "validate-password": True,
             "username": username,
             "password": password,
             "validation-factors": {
@@ -245,6 +246,10 @@ class CrowdServer(object):
                 ]
             }
         }
+
+        if password is None:
+            params["validate-password"] = False
+
         if proxy:
             params["validation-factors"]["validationFactors"].append({"name": "X-Forwarded-For", "value": proxy, })
 
