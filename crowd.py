@@ -240,18 +240,18 @@ class CrowdServer(object):
             "validate-password": True,
             "username": username,
             "password": password,
-            "validation-factors": {
-                "validationFactors": [
-                    {"name": "remote_address", "value": remote, }
-                ]
-            }
+            # "validation-factors": {
+            #     "validationFactors": [
+            #         {"name": "remote_address", "value": remote, }
+            #     ]
+            # }
         }
 
         if password is None:
             params["validate-password"] = False
 
-        if proxy:
-            params["validation-factors"]["validationFactors"].append({"name": "X-Forwarded-For", "value": proxy, })
+        # if proxy:
+        #     params["validation-factors"]["validationFactors"].append({"name": "X-Forwarded-For", "value": proxy, })
 
         response = self._post(self.rest_url + "/session",
                               data=json.dumps(params),
