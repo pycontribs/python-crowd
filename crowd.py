@@ -893,6 +893,23 @@ class CrowdServer(object):
 
         return True
 
+    def get_cookie_config(self):
+        """Gets the cookie configuration of crowd.
+
+        Returns:
+            json:
+              <domain>.atlassian.com</domain>
+              <secure>true</secure>
+              <name>cookie-name</name>
+          """
+
+        response = self._get(self.rest_url + "/config/cookie")
+
+        if response.status_code == 200:
+            return response.json()
+
+        raise CrowdError("received server response %d" % response.status_code)
+
     # def search(self, entity_type, property_name, search_string):
     #     """Performs a user search using the Crowd search API.
     #     https://developer.atlassian.com/display/CROWDDEV/Crowd+REST+Resources#CrowdRESTResources-SearchResource
