@@ -1,4 +1,5 @@
 from setuptools import setup
+import codecs
 import os.path
 __dir__ = os.path.dirname(os.path.abspath(__file__))
 
@@ -10,7 +11,8 @@ setup(
     install_requires=['requests', 'lxml'],
 
     description='A python client to the Atlassian Crowd REST API',
-    long_description=open(os.path.join(__dir__, 'README.rst')).read(),
+    long_description=codecs.open(os.path.join(__dir__, 'README.rst'),
+                                 encoding='utf-8').read(),
 
     author='Alexander Else',
     author_email='aelse@else.id.au',
