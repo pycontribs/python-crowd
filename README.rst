@@ -95,3 +95,4 @@ to the end of this list and include the change in your pull request.
 * Yuichi Tokutomi (@Tommy1969)
 * Attila Bogár (@attilabogar)
 * Jascha Geerds (@jgeerds)
+* John Christian (@potus98)
