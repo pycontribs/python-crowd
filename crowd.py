@@ -628,7 +628,7 @@ class CrowdServer(object):
             memberships[group] = {u'users': users, u'groups': groups}
         return memberships
 
-    def search(self, entity_type, property_name, search_string):
+    def search(self, entity_type, property_name, search_string, start_index=0, max_results=99999):
         """Performs a user search using the Crowd search API.
 
         https://developer.atlassian.com/display/CROWDDEV/Crowd+REST+Resources#CrowdRESTResources-SearchResource
@@ -637,6 +637,8 @@ class CrowdServer(object):
             entity_type: 'user' or 'group'
             property_name: eg. 'email', 'name'
             search_string: the string to search for.
+            start_index: starting index of the results (default: 0)
+            max_results: maximum number of results returned (default: 99999)
 
         Returns:
             json results:
@@ -656,6 +658,8 @@ class CrowdServer(object):
         params = {
             'entity-type': entity_type,
             'expand': entity_type,
+            'start-index': start_index,
+            'max-results': max_results
         }
         # Construct XML payload of the form:
         # <property-search-restriction>
