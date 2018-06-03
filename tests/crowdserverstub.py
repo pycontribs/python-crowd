@@ -18,10 +18,12 @@
 
 import re, sys
 
-try:
-    from BaseHTTPServer import HTTPServer, BaseHTTPRequestHandler  # Py27
-except ImportError:
-    from http.server import HTTPServer, BaseHTTPRequestHandler  # Py3k
+try:  # Py27
+    from BaseHTTPServer import HTTPServer
+    from BaseHTTPServer import BaseHTTPRequestHandler
+except ImportError: # Py3k
+    from http.server import HTTPServer
+    from http.server importBaseHTTPRequestHandler
 
 try:
     from urllib2 import urlparse  # Py27

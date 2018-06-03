@@ -1,31 +1,15 @@
-from setuptools import setup
-import codecs
-import os.path
-__dir__ = os.path.dirname(os.path.abspath(__file__))
+#!/usr/bin/env python
+import setuptools
 
-setup(
-    name='Crowd',
-    license='BSD',
-    py_modules=['crowd'],
-    version='1.0.1',
-    install_requires=['requests', 'lxml'],
+# In python < 2.7.4, a lazy loading of package `pbr` will break
+# setuptools if some other modules registered functions in `atexit`.
+# solution from: http://bugs.python.org/issue15881#msg170215
+try:
+    import multiprocessing  # noqa
+except ImportError:
+    pass
 
-    description='A python client to the Atlassian Crowd REST API',
-    long_description=codecs.open(os.path.join(__dir__, 'README.rst'),
-                                 encoding='utf-8').read(),
 
-    author='Alexander Else',
-    author_email='aelse@else.id.au',
-    url='https://github.com/pycontribs/python-crowd',
-
-    classifiers=[
-        "Development Status :: 4 - Beta",
-        "Intended Audience :: Developers",
-        "License :: OSI Approved :: BSD License",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.3",
-        "Topic :: Software Development :: Libraries :: Python Modules",
-        "Topic :: System :: Systems Administration :: Authentication/Directory",
-    ]
-)
+setuptools.setup(
+    setup_requires=['pbr>=3.0.0', 'setuptools>=17.1', 'pytest-runner', 'sphinx>=1.6.5'],
+    pbr=True)
