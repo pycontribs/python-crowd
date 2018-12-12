@@ -496,8 +496,6 @@ class CrowdServer(object):
 
         response = self._delete(self.rest_url + "/group/user/direct",params={"username": username, "groupname": groupname})
 
-        print response
-
         if response.status_code == 204:
             return True
 
