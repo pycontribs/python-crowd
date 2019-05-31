@@ -96,3 +96,4 @@ to the end of this list and include the change in your pull request.
 * Attila Bogár (@attilabogar)
 * Jascha Geerds (@jgeerds)
 * John Christian (@potus98)
+* Maiko Bossuyt (@maiko)
