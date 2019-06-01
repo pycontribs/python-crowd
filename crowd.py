@@ -281,7 +281,7 @@ class CrowdServer(object):
         }
 
         if proxy:
-            params["validation-factors"]["validationFactors"].append({"name": "X-Forwarded-For", "value": proxy, })
+            params["validationFactors"].append({"name": "X-Forwarded-For", "value": proxy, })
 
         url = self.rest_url + "/session/%s" % token
         response = self._post(url, data=json.dumps(params), params={"expand": "user"})
