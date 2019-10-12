@@ -7,7 +7,7 @@ setup(
     name='Crowd',
     license='BSD',
     py_modules=['crowd'],
-    version='2.0.1',
+    version='3.0.0',
     install_requires=['requests', 'lxml'],
 
     description='A python client to the Atlassian Crowd REST API',
@@ -24,7 +24,7 @@ setup(
         "License :: OSI Approved :: BSD License",
         "Programming Language :: Python",
         "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.5",
         "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: System :: Systems Administration :: Authentication/Directory",
     ]
