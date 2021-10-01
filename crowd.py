@@ -435,16 +435,15 @@ class CrowdServer(object):
         """Set an attribute on  a user
         :param username: The username on which to set the attribute
         :param attribute: The name of the attribute to set
-        :param value: The value of the attribute to set
+        :param value: The value of the attribute to set (can be a list or tuple)
         :return: True on success, False on failure.
         """
+        values = value if isinstance(value, (list, tuple)) else [value]
         data = {
             'attributes': [
                 {
                     'name': attribute,
-                    'values': [
-                        value
-                    ]
+                    'values': values
                 },
             ]
         }
