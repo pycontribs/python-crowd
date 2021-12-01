@@ -97,3 +97,4 @@ to the end of this list and include the change in your pull request.
 * Jascha Geerds (@jgeerds)
 * John Christian (@potus98)
 * Maiko Bossuyt (@maiko)
+* Oleg Sinilo (@GoRoSfan)

@@ -318,6 +318,21 @@ class CrowdServer(object):
         # Otherwise return True
         return True
 
+    def get_cookie_conf(self):
+        """Retrieve cookie configuration
+
+        Returns:
+            dict: conf information
+            None: if failure occurred
+
+        """
+        response = self._get(self.rest_url + "/config/cookie")
+
+        if not response.ok:
+            return None
+
+        return response.json()
+
     def add_user(self, username, raise_on_error=False, **kwargs):
         """Add a user to the directory
 
@@ -459,6 +474,143 @@ class CrowdServer(object):
 
         return False
 
+    def create_group(self, name, description='', raise_on_error=False):
+        """Create a new group with the <name>.
+
+        Args:
+            name (str): the group name of a new group
+
+        Returns:
+            None: if succeeded
+            error msg (str): If unsuccessful
+
+        """
+        data = {
+            "name": name,
+            "description": description,
+            "type": "GROUP",
+            "active": True
+        }
+        response = self._post(self.rest_url + "/group", data=json.dumps(data))
+        if response.status_code == 201:
+            return
+
+        if raise_on_error:
+            raise RuntimeError(response.json()['message'])
+
+        return response.json()['message']
+
+    def remove_group(self, name, raise_on_error=False):
+        """Remove a group with the <name>.
+
+        Args:
+            name (str): the group name of a removed group
+
+        Returns:
+            None: If succeeded
+            error msg (str): If unsuccessful
+
+        """
+        data = {
+            "groupname": name
+        }
+        response = self._delete(self.rest_url + "/group", params=data)
+        if response.status_code == 204:
+            return
+
+        if raise_on_error:
+            raise RuntimeError(response.json()['message'])
+
+        return response.json()['message']
+
+    def update_group(self, name, data, raise_on_error=False):
+        """Update a group with the <name>.
+
+        Args:
+            name (str): the group name of a removed group
+            data (dict): new group attrs
+
+        Returns:
+            None: if succeeded
+            error msg (str): If unsuccessful
+
+        """
+        params = {
+            'groupname': name
+        }
+        data["name"] = name
+        data["type"] = "GROUP"
+
+        response = self._put(
+            self.rest_url + "/group", params=params, data=json.dumps(data)
+        )
+        if response.status_code == 200:
+            return
+
+        if raise_on_error:
+            raise RuntimeError(response.json()['message'])
+
+        return response.json()['message']
+
+    def add_child_group(self, name, parent, raise_on_error=False):
+        """Add a child group with the <name> to <parent> group.
+
+        Args:
+            name (str): the name of a child group
+            parent (str): the name of a parent group
+
+        Returns:
+            None: if succeeded
+            error msg (str): If unsuccessful
+
+        """
+        params = {
+            'groupname': parent
+        }
+        data = {
+            "name": name
+        }
+        response = self._post(
+            self.rest_url + "/group/child-group/direct",
+            data=json.dumps(data),
+            params=params
+        )
+        if response.status_code == 201:
+            return
+
+        if raise_on_error:
+            raise RuntimeError(response.json()['message'])
+
+        return response.json()['message']
+
+    def remove_child_group(self, name, parent, raise_on_error=False):
+        """Add a child group with the <name> to <parent> group.
+
+        Args:
+            name (str): the name of a child group
+            parent (str): the name of a parent group
+
+        Returns:
+            None: if succeeded
+            error msg (str): If unsuccessful
+
+        """
+        params = {
+            'groupname': parent,
+            'child-groupname': name
+        }
+        response = self._delete(
+            self.rest_url + "/group/child-group/direct",
+            params=params
+        )
+        if response.status_code == 204:
+            return
+
+        if raise_on_error:
+            raise RuntimeError(response.json()['message'])
+
+        return response.json()['message']
+
     def add_user_to_group(self, username, groupname, raise_on_error=False):
         """Add a user to a group
         :param username: The username to assign to the group
@@ -483,9 +635,9 @@ class CrowdServer(object):
     def remove_user_from_group(self, username, groupname, raise_on_error=False):
         """Remove a user from a group
 
-	Attempts to remove a user from a group
+        Attempts to remove a user from a group
 
-	Args
+        Args:
              username: The username to remove from the group.
              groupname: The group name to be removed from the user.
 
@@ -494,7 +646,13 @@ class CrowdServer(object):
             False: If unsuccessful
         """
 
-        response = self._delete(self.rest_url + "/group/user/direct",params={"username": username, "groupname": groupname})
+        response = self._delete(
+            self.rest_url + "/group/user/direct",
+            params={
+                "username": username,
+                "groupname": groupname
+            }
+        )
 
         if response.status_code == 204:
             return True
@@ -567,7 +725,8 @@ class CrowdServer(object):
         return [g['name'] for g in response.json()['groups']]
 
     def get_nested_groups(self, username):
-        """Retrieve a list of all group names that have <username> as a direct or indirect member.
+        """Retrieve a list of all group names that have <username> as a direct
+        or indirect member.
 
         Args:
             username: The account username.
@@ -587,7 +746,8 @@ class CrowdServer(object):
         return [g['name'] for g in response.json()['groups']]
 
     def get_nested_group_users(self, groupname):
-        """Retrieves a list of all users that directly or indirectly belong to the given groupname.
+        """Retrieves a list of all users that directly or indirectly belong to
+        the given groupname.
 
         Args:
             groupname: The group name.
