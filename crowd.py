@@ -40,7 +40,9 @@ class CrowdServer(object):
         self.crowd_url = crowd_url
         self.app_name = app_name
         self.app_pass = app_pass
-        self.rest_url = crowd_url.rstrip("/") + "/rest/usermanagement/1"
+        # XXX the leading '/crowd' is necessary for Crowd Data Center (should
+        #     add logic to auto-determine the need for it)
+        self.rest_url = crowd_url.rstrip("/") + "/crowd/rest/usermanagement/1"
         self.ssl_verify = ssl_verify
         self.client_cert = client_cert
         self.timeout = timeout
