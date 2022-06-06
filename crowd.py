@@ -31,16 +31,18 @@ class CrowdServer(object):
     The ``ssl_verify`` parameter controls how and if certificates are verified.
     If ``True``, the SSL certificate will be verified.
     A CA_BUNDLE path can also be provided.
-    
+
     The ``client_cert`` tuple (cert,key) specifies a SSL client certificate and key files.
     """
 
-    def __init__(self, crowd_url, app_name, app_pass, ssl_verify=True, 
+    def __init__(self, crowd_url, app_name, app_pass, ssl_verify=True,
                  timeout=None, client_cert=None):
         self.crowd_url = crowd_url
         self.app_name = app_name
         self.app_pass = app_pass
-        self.rest_url = crowd_url.rstrip("/") + "/rest/usermanagement/1"
+        # XXX the leading '/crowd' is necessary for Crowd Data Center (should
+        #     add logic to auto-determine the need for it)
+        self.rest_url = crowd_url.rstrip("/") + "/crowd/rest/usermanagement/1"
         self.ssl_verify = ssl_verify
         self.client_cert = client_cert
         self.timeout = timeout
@@ -51,9 +53,10 @@ class CrowdServer(object):
     def __str__(self):
         return "Crowd Server at %s" % self.crowd_url
 
+    # don't include the password!
     def __repr__(self):
-        return "<CrowdServer('%s', '%s', '%s')>" % \
-            (self.crowd_url, self.app_name, self.app_pass)
+        return "<CrowdServer('%s', '%s', '********')>" % \
+            (self.crowd_url, self.app_name)
 
     def _build_session(self, content_type='json'):
         headers = {
@@ -449,16 +452,15 @@ class CrowdServer(object):
         """Set an attribute on  a user
         :param username: The username on which to set the attribute
         :param attribute: The name of the attribute to set
-        :param value: The value of the attribute to set
+        :param value: The value of the attribute to set (can be a list or tuple)
         :return: True on success, False on failure.
         """
+        values = value if isinstance(value, (list, tuple)) else [value]
         data = {
             'attributes': [
                 {
                     'name': attribute,
-                    'values': [
-                        value
-                    ]
+                    'values': values
                 },
             ]
         }
@@ -812,7 +814,8 @@ class CrowdServer(object):
             memberships[group] = {u'users': users, u'groups': groups}
         return memberships
 
-    def search(self, entity_type, property_name, search_string, start_index=0, max_results=99999):
+    def search(self, entity_type, property_name, search_string,
+               start_index=0, max_results=99999, with_attributes=False):
         """Performs a user search using the Crowd search API.
 
         https://developer.atlassian.com/display/CROWDDEV/Crowd+REST+Resources#CrowdRESTResources-SearchResource
@@ -823,35 +826,33 @@ class CrowdServer(object):
             search_string: the string to search for.
             start_index: starting index of the results (default: 0)
             max_results: maximum number of results returned (default: 99999)
+            with_attributes: whether also to return entity attributes
 
         Returns:
             json results:
                 Returns search results.
         """
 
-        params = {
-            "entity-type": entity_type,
-            "expand": entity_type,
-            "property-search-restriction": {
-                "property": {"name": property_name, "type": "STRING"},
-                "match-mode": "CONTAINS",
-                "value": search_string,
-            }
-        }
+        # optionally return attributes (might expect <entity-type>.attributes
+        # but that doesn't work and this does)
+        expand = entity_type
+        if with_attributes:
+            expand += ",attributes"
 
         params = {
             'entity-type': entity_type,
-            'expand': entity_type,
+            'expand': expand,
             'start-index': start_index,
             'max-results': max_results
         }
+
         # Construct XML payload of the form:
         # <property-search-restriction>
         #   <property>
         #     <name>email</name>
         #     <type>STRING</type>
         #   </property>
-        #   <match-mode>EXACTLY_MATCHES</match-mode>
+        #   <match-mode>CONTAINS</match-mode>
         #   <value>bob@example.net</value>
         # </property-search-restriction>
 
